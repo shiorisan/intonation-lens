@@ -17,6 +17,7 @@
   --display:"Bricolage Grotesque","IBM Plex Sans JP",system-ui,sans-serif;
   --body:"IBM Plex Sans JP","Hiragino Sans","Yu Gothic",system-ui,sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --wscale:1;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
@@ -46,6 +47,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15p
 h1,h2,h3{margin:0;text-wrap:balance}
 p{margin:0}
 button,select,input,textarea{font:inherit;color:inherit}
+button,label.btn,summary{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 :focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 
 header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px}
@@ -69,7 +71,7 @@ header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-be
 .wave-wrap canvas{width:100%;height:100%;display:block}
 .row{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:5px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:14px;white-space:nowrap}
-.btn:hover{border-color:var(--ink-3)}
+@media (hover:hover){.btn:hover{border-color:var(--ink-3)}}
 .btn:disabled{opacity:.45;cursor:default}
 .btn.solid{background:var(--c);border-color:var(--c);color:var(--on-accent);font-weight:500}
 .btn.tone{border-color:var(--c);color:var(--c);font-weight:500}
@@ -93,7 +95,7 @@ select.sel{border:1px solid var(--line);background:var(--surface);border-radius:
 .lines-head h2{font-family:var(--display);font-size:20px;font-weight:700}
 .lines{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 8px;scroll-snap-type:x proximity}
 .line-card{flex:0 0 auto;width:230px;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 10px;cursor:pointer;display:flex;flex-direction:column;gap:3px;scroll-snap-align:start}
-.line-card:hover{border-color:var(--ink-3)}
+@media (hover:hover){.line-card:hover{border-color:var(--ink-3)}}
 .line-card[aria-current="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
 .line-card .row1{display:flex;align-items:center;gap:8px}
 .line-card .no{font-family:var(--display);font-weight:700;font-size:18px;line-height:1}
@@ -119,7 +121,7 @@ select.sel{border:1px solid var(--line);background:var(--surface);border-radius:
 .wline.ref{--c:var(--ref);--c-soft:var(--ref-soft)} .wline.mine{--c:var(--mine);--c-soft:var(--mine-soft)}
 .wline .empty{font-size:14px;color:var(--ink-3);align-self:center}
 .word{border:0;background:none;padding:2px 4px;border-radius:6px;cursor:pointer;font-family:var(--display);line-height:1.15;color:var(--ink);display:inline-flex;align-items:baseline}
-.word:hover{background:var(--surface-2)}
+@media (hover:hover){.word:hover{background:var(--surface-2)}}
 .word.now{background:var(--c-soft)}
 .syl{display:inline-block;transition:font-size .2s}
 .syl.s{color:var(--c);font-weight:800}
@@ -152,7 +154,8 @@ select.sel{border:1px solid var(--line);background:var(--surface);border-radius:
 .inner{position:relative}
 .wrow{position:relative;height:46px;border-top:1px solid var(--grid);border-bottom:1px solid var(--grid)}
 .wbtn{position:absolute;top:0;bottom:0;border:0;background:transparent;display:flex;align-items:center;justify-content:center;white-space:nowrap;cursor:pointer;font-family:var(--display);color:var(--ink);border-left:1px dashed var(--line);padding:0 2px;--c:var(--ref)}
-.wbtn:hover,.wbtn.now{background:var(--ref-soft)}
+.wbtn.now{background:var(--ref-soft)}
+@media (hover:hover){.wbtn:hover{background:var(--ref-soft)}}
 .axis-note{display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--ink-3)}
 .playhead{position:absolute;top:0;bottom:0;width:2px;background:var(--ink);opacity:.6;pointer-events:none;display:none;z-index:2}
 #ph-wave-ref{background:var(--ref);opacity:.9}
@@ -202,6 +205,63 @@ select.sel{border:1px solid var(--line);background:var(--surface);border-radius:
 .heard{color:var(--ink-2)}
 .heard .x{color:var(--warn);text-decoration:underline wavy;text-underline-offset:3px}
 .card .slot-head h3{margin-right:auto}
+.tune summary{cursor:pointer;list-style-position:inside}
+.tune-body{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+@media (hover:none){.kbd-hint{display:none}}
+
+/* mobile: bottom action bar (line nav + listen + record) */
+.mbar{display:none}
+@media (max-width:640px){
+  :root{--wscale:.8}
+  body{padding-block:18px calc(84px + env(safe-area-inset-bottom))}
+  .wrap{gap:16px}
+  .brand p{font-size:14px}
+  .card{padding:12px}
+  .panel{padding:14px 12px;border-radius:12px;gap:12px}
+  .btn{min-height:44px;padding:8px 14px;justify-content:center}
+  .iconbtn,.keybtn{width:44px;height:44px}
+  select.sel{width:100%;min-height:44px;font-size:16px}
+  textarea#script{font-size:16px}
+  .seg{display:flex;width:100%}
+  .seg button{flex:1;min-height:42px;padding:8px 6px}
+  .controls,.subbar{flex-direction:column;align-items:stretch;gap:12px}
+  .grp{flex-direction:column;align-items:stretch;gap:4px}
+  .panel-head{flex-direction:column;align-items:stretch;gap:12px}
+  .panel-head > .nav{display:none}
+  .legend{margin-left:0}
+  .legend input{width:20px;height:20px}
+  .lines-head{margin-bottom:4px}
+  .line-card{width:min(72vw,240px)}
+  .voicebar{padding:10px}
+  .voicebar .row .btn,.recorder .row .btn{flex:1 1 auto}
+  .keybox .btn{flex:1}
+  .script-view{grid-template-columns:minmax(0,1fr);gap:0}
+  .who{margin-top:4px}
+  .wline{min-height:44px;gap:2px 6px}
+  .word{padding:4px}
+  .recorder{padding:10px}
+  .metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .metric{padding:12px;gap:6px}
+  .metric h3{font-size:12px}
+  .big{font-size:24px}
+  .big small{font-size:11px}
+  .metric .hint{display:none}
+  .metric .top{flex-wrap:wrap;gap:4px}
+  .bar{grid-template-columns:auto minmax(0,1fr) auto;gap:6px;white-space:nowrap}
+  /* practice first: words → listen → record, then the less-used settings */
+  .script-view{order:-3}
+  .voicebar{order:-2}
+  .recorder{order:-1}
+  .axis-note{font-size:11px}
+  .guide section{padding:14px}
+  .feedback li{gap:8px}
+  .mbar{display:flex;align-items:center;gap:6px;position:fixed;left:0;right:0;bottom:0;z-index:20;padding:8px 10px calc(8px + env(safe-area-inset-bottom));background:var(--surface);border-top:1px solid var(--line);box-shadow:0 -4px 16px rgba(0,0,0,.08)}
+  .mbar .iconbtn{flex:none}
+  .mb-pos{font-family:var(--display);font-weight:700;font-size:15px;min-width:3.6em;text-align:center;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .mb-pos small{font-family:var(--mono);font-size:11px;color:var(--ink-3);font-weight:400}
+  .mbar .btn{flex:1;min-width:0;padding:8px 6px}
+  body.typing .mbar{display:none}
+}
 @media (prefers-reduced-motion: reduce){*{transition:none!important}.recording .dot{animation:none}}
 </style>
 
@@ -283,7 +343,7 @@ It's a beautiful day.</textarea>
         <div class="seg" id="modelvoice"><button type="button" data-v="orig" aria-pressed="true">オリジナル</button><button type="button" data-v="conv" aria-pressed="false">あなたの声</button></div>
         <button class="btn" id="lp-both" type="button">お手本 → あなた</button>
       </div>
-      <div class="grp"><span class="hint-s">単語をクリックで</span>
+      <div class="grp"><span class="hint-s">単語を<span class="clk">クリック</span>で</span>
         <div class="seg" id="wordmode"><button type="button" data-v="audio" aria-pressed="true">お手本の音声</button><button type="button" data-v="tts" aria-pressed="false">読み上げ</button></div>
       </div>
     </div>
@@ -299,12 +359,15 @@ It's a beautiful day.</textarea>
         <p class="hint-s" id="key-info"></p>
       </div>
       <div class="vb-col">
+        <details class="tune" id="tune" open>
+        <summary class="vb-lbl">あなたの声のお手本を調整</summary>
+        <div class="tune-body">
         <span class="vb-lbl">声の高さ（キー・半音）</span>
         <div class="keybox">
           <button class="keybtn" id="key-down" type="button" aria-label="キーを1つ下げる">♭</button>
           <output class="keyval" id="key-val" aria-live="polite">0</output>
           <button class="keybtn" id="key-up" type="button" aria-label="キーを1つ上げる">♯</button>
-          <button class="btn" id="key-auto" type="button"title="録音した声の高さに合わせる">自動</button>
+          <button class="btn" id="key-auto" type="button" title="録音した声の高さに合わせる">自動</button>
           <button class="btn" id="key-orig" type="button">原曲キー</button>
         </div>
         <span class="vb-lbl">声質（声の太さ・響き）</span>
@@ -317,6 +380,8 @@ It's a beautiful day.</textarea>
         </div>
         <div class="keyscale" id="key-scale" aria-hidden="true"></div>
         <p class="hint-s" id="key-scale-note"></p>
+        </div>
+        </details>
       </div>
     </div>
 
@@ -335,7 +400,7 @@ It's a beautiful day.</textarea>
           <input class="vh" type="file" id="file-take" accept="audio/*,video/*,.mp3,.m4a,.mp4,.wav,.webm,.ogg,.aac,.mov">
         </div>
         <div class="meter" aria-hidden="true"><span id="lvl"></span></div>
-        <div class="rec-status" id="rec-status" role="status">お手本を聞いたあと、同じように読んでください。話し終えて1秒ほど黙ると自動で止まります（Rキーでも開始・停止）。</div>
+        <div class="rec-status" id="rec-status" role="status">お手本を聞いたあと、同じように読んでください。話し終えて1秒ほど黙ると自動で止まります<span class="kbd-hint">（Rキーでも開始・停止）</span>。</div>
         <div class="err" id="mic-err" hidden></div>
       </div>
       <div class="rec-main">
@@ -371,10 +436,10 @@ It's a beautiful day.</textarea>
     </div>
     <div class="axis-note">
       <span>上段：声の高さ（半音。0＝その人の平均の高さ）</span>
-      <span>単語：お手本の単語の位置（推定）。クリックで発音</span>
+      <span>単語：お手本の単語の位置（推定）。<span class="clk">クリック</span>で発音</span>
       <span>中段：音節の山（●強勢／○弱い音節）</span>
       <span>下段：声の強さ（dB）</span>
-      <span>← → で行を移動</span>
+      <span class="kbd-hint">← → で行を移動</span>
     </div>
   </div>
 
@@ -415,6 +480,14 @@ It's a beautiful day.</textarea>
   </div>
 </div>
 
+<nav class="mbar" id="mbar" aria-label="練習の操作">
+  <button class="iconbtn" id="mb-prev" type="button" aria-label="前の行"><svg viewBox="0 0 16 16"><path d="M10 3L5 8l5 5"/></svg></button>
+  <span class="mb-pos" id="mb-pos">—</span>
+  <button class="iconbtn" id="mb-next" type="button" aria-label="次の行"><svg viewBox="0 0 16 16"><path d="M6 3l5 5-5 5"/></svg></button>
+  <button class="btn tone ref-c" id="mb-ref" type="button"><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg>お手本</button>
+  <button class="btn recbtn" id="mb-rec" type="button"><span class="dot"></span>録音</button>
+</nav>
+
 <script>
 (function(){
 "use strict";
@@ -450,6 +523,8 @@ function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<":
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 function scriptLines() { return $("script").value.split(/\r?\n/).map(s => s.trim()).filter(Boolean); }
 function setStatus(t) { $("status").textContent = t; }
+const TOUCH = matchMedia("(hover: none)").matches, CLICK = TOUCH ? "タップ" : "クリック";
+if (TOUCH) document.querySelectorAll(".clk").forEach(e => { e.textContent = CLICK; });
 
 /* ---------- decode / resample ---------- */
 async function resample(buffer) {
@@ -944,7 +1019,22 @@ function renderHeader() {
   const has = !!takes[S.sel];
   $("lp-mine").disabled = !has; $("lp-both").disabled = !has; $("lp-ref").disabled = !n; $("lp-conv").disabled = !n;
   renderVoice();
+  syncBar();
 }
+function syncBar() {
+  const bm = $("rec-model"), r = $("mb-rec"), on = bm.classList.contains("recording");
+  $("mb-pos").innerHTML = $("pos").innerHTML;
+  $("mb-prev").disabled = $("prev").disabled; $("mb-next").disabled = $("next").disabled; $("mb-ref").disabled = $("lp-ref").disabled;
+  r.disabled = bm.disabled; r.classList.toggle("recording", on);
+  r.innerHTML = `<span class="dot"></span>${on ? "停止" : "録音"}`;
+}
+$("mb-prev").addEventListener("click", () => $("prev").click());
+$("mb-next").addEventListener("click", () => $("next").click());
+$("mb-ref").addEventListener("click", () => $("lp-ref").click());
+$("mb-rec").addEventListener("click", () => $("rec-model").click());
+// hide the fixed bar while the on-screen keyboard is likely up
+document.addEventListener("focusin", (e) => { if (e.target.matches("textarea,input:not([type=checkbox]):not([type=file]),select")) document.body.classList.add("typing"); });
+document.addEventListener("focusout", () => document.body.classList.remove("typing"));
 $("prev").addEventListener("click", () => select(S.sel - 1));
 $("next").addEventListener("click", () => select(S.sel + 1));
 document.addEventListener("keydown", (e) => {
@@ -958,7 +1048,7 @@ document.addEventListener("keydown", (e) => {
 function sylHTML(s, big) {
   const size = big ? 17 + 27 * s.norm : 11 + 13 * s.norm;
   const w = s.strong ? 800 : Math.round((400 + 200 * s.norm) / 100) * 100;
-  return `<span class="syl ${s.strong ? "s" : "w"}" style="font-size:${size.toFixed(1)}px;font-weight:${w}">${esc(s.t)}</span>`;
+  return `<span class="syl ${s.strong ? "s" : "w"}" style="font-size:calc(${size.toFixed(1)}px * var(--wscale));font-weight:${w}">${esc(s.t)}</span>`;
 }
 function renderScript() {
   const words = wordTiming(S.sel), refBox = $("wl-ref"), mineBox = $("wl-mine");
@@ -1052,13 +1142,13 @@ function renderFeedback() {
     const refStrong = words.map((w, k) => ({ w, k })).filter(x => x.w.strong);
     const missed = refStrong.filter(x => mw[x.k].syl.every(s => !s.strong) && Math.max(...mw[x.k].syl.map(s => s.norm)) < 0.6);
     const extra = words.map((w, k) => ({ w, k })).filter(x => !x.w.strong && x.w.norm < 0.4 && mw[x.k].syl.some(s => s.strong));
-    if (missed.length) ng(`お手本で強く言っている <b>${missed.map(x => esc(x.w.clean)).join(", ")}</b> が、あなたの録音では弱めです。この単語をクリックして聞き、大きく・長く・高く言ってみましょう。`);
+    if (missed.length) ng(`お手本で強く言っている <b>${missed.map(x => esc(x.w.clean)).join(", ")}</b> が、あなたの録音では弱めです。この単語を${CLICK}して聞き、大きく・長く・高く言ってみましょう。`);
     if (extra.length) ng(`<b>${extra.map(x => esc(x.w.clean)).join(", ")}</b> はお手本では弱く短い単語ですが、強く発音されています。軽く添えるように。`);
     if (refStrong.length && !missed.length) ok(`強く言うべき単語（${refStrong.map(x => esc(x.w.clean)).join(", ")}）はしっかり強調できています。`);
   }
   const tkx = takes[S.sel];
   if (tkx && tkx.missing) {
-    if (tkx.missing.length) ng(`文字起こしでは <b>${tkx.missing.map(esc).join(", ")}</b> がスクリプトどおりに聞き取られませんでした。その単語をクリックしてお手本の発音と聞き比べてみましょう。`);
+    if (tkx.missing.length) ng(`文字起こしでは <b>${tkx.missing.map(esc).join(", ")}</b> がスクリプトどおりに聞き取られませんでした。その単語を${CLICK}してお手本の発音と聞き比べてみましょう。`);
     else ok(`文字起こしで、すべての単語がスクリプトどおりに聞き取られました。`);
   }
   if (!isNaN(R.range) && !isNaN(M.range) && R.range > 0) {
@@ -1371,6 +1461,7 @@ function recUI() {
     bm.disabled = rec.state !== "idle" || !REF; bn.disabled = rec.state !== "idle" || !REF;
   }
   $("file-take").disabled = rec.state !== "idle";
+  syncBar();
 }
 function renderRecorder() {
   $("rec-title").textContent = lineCount() ? `あなたの録音 ・ 行 ${S.sel + 1}` : "あなたの録音";
@@ -1382,7 +1473,7 @@ function renderRecorder() {
     const got = normWords(tk.heard);
     heard = `<br>聞き取られた文：<span class="heard">${got.length ? got.map((w, k) => tk.heardOk && tk.heardOk[k] ? esc(w) : `<span class="x">${esc(w)}</span>`).join(" ") : "（聞き取れませんでした）"}</span>`;
   } else if (ASR.ready && !REF.isSample) heard = "<br>聞き取られた文：解析中…";
-  $("hist").innerHTML = `${esc(tk.label)} ・ ${((tk.seg.b - tk.seg.a) / FPS).toFixed(1)}秒（波形クリックで再生）<br>一致度の記録：${h.map((v, n) => n === h.length - 1 ? `<b>${v}</b>` : v).join(" → ")}${heard}`;
+  $("hist").innerHTML = `${esc(tk.label)} ・ ${((tk.seg.b - tk.seg.a) / FPS).toFixed(1)}秒（波形${CLICK}で再生）<br>一致度の記録：${h.map((v, n) => n === h.length - 1 ? `<b>${v}</b>` : v).join(" → ")}${heard}`;
 }
 function recStatus(t, live) { const el = $("rec-status"); el.textContent = t; el.classList.toggle("live", !!live); }
 function micError(e) {
@@ -1932,6 +2023,7 @@ $("script").addEventListener("input", () => {
 });
 $("show-ref").addEventListener("change", (e) => { S.show.ref = e.target.checked; drawCharts(); });
 $("show-mine").addEventListener("change", (e) => { S.show.mine = e.target.checked; drawCharts(); });
+if (matchMedia("(max-width: 640px)").matches) $("tune").open = false;
 let rt = 0, lastW = 0;
 new ResizeObserver(() => { const w = $("scroller").clientWidth; if (w === lastW) return; lastW = w; clearTimeout(rt); rt = setTimeout(drawAll, 60); }).observe($("scroller"));
 new MutationObserver(drawAll).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
@@ -1983,7 +2075,7 @@ function loadSample() {
   resegment();
   setTake(0, synth(M1), "サンプル録音（合成音）", true);
   setTake(1, synth(M2), "サンプル録音（合成音）", true);
-  recStatus("行1・行2にはサンプルの録音が入っています。行3を選んで、自分で録音してみてください（Rキーでも開始）。");
+  recStatus(`行1・行2にはサンプルの録音が入っています。行3を選んで、自分で録音してみてください${TOUCH ? "" : "（Rキーでも開始）"}。`);
   asrStatus(IN_HOST ? "サンプルのスクリプトを表示中です。" : "サンプルのスクリプトを表示中です。お手本の音声を読み込むと、自動で文字起こしします（初回はモデルのダウンロードに少し時間がかかります）。");
   refreshAll();
 }
