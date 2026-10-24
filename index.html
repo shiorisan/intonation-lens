@@ -1,0 +1,1993 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Intonation Lens</title></head><body style="margin:0">
+<title>Intonation Lens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700;12..96,800&family=IBM+Plex+Sans+JP:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: model + script on top, then line list, then one practice panel (script words sized by stress → recorder → stacked charts) */
+:root{
+  --bg:#EEF2F4; --surface:#FFFFFF; --surface-2:#F4F7F8; --band:#EAF0F3; --ink:#15212B; --ink-2:#4A5A67; --ink-3:#7C8B97;
+  --line:#D8E0E6; --grid:#E3E9ED;
+  --ref:#0B7A86; --ref-soft:rgba(11,122,134,.14);
+  --mine:#D55A24; --mine-soft:rgba(213,90,36,.14);
+  --rec:#C8323C; --rec-soft:rgba(200,50,60,.14);
+  --conv:#6A4CC0; --conv-soft:rgba(106,76,192,.14);
+  --good:#2F7D4A; --good-bg:#E3F2E8; --warn:#A35F00; --warn-bg:#FBEFD9;
+  --focus:#2B6CB0; --on-accent:#FFFFFF;
+  --display:"Bricolage Grotesque","IBM Plex Sans JP",system-ui,sans-serif;
+  --body:"IBM Plex Sans JP","Hiragino Sans","Yu Gothic",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0E151B; --surface:#16212A; --surface-2:#1B2833; --band:#1D2B36; --ink:#E6EDF2; --ink-2:#A9B7C2; --ink-3:#7A8A96;
+    --line:#2A3945; --grid:#223039;
+    --ref:#3CC3CF; --ref-soft:rgba(60,195,207,.16);
+    --mine:#FF8A55; --mine-soft:rgba(255,138,85,.16);
+    --rec:#FF6B73; --rec-soft:rgba(255,107,115,.16);
+    --conv:#B39DFA; --conv-soft:rgba(179,157,250,.18);
+    --good:#6FCF8E; --good-bg:#18352A; --warn:#F2B35B; --warn-bg:#3A2C14; --focus:#7FB2F0; --on-accent:#0E151B;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0E151B; --surface:#16212A; --surface-2:#1B2833; --band:#1D2B36; --ink:#E6EDF2; --ink-2:#A9B7C2; --ink-3:#7A8A96;
+  --line:#2A3945; --grid:#223039;
+  --ref:#3CC3CF; --ref-soft:rgba(60,195,207,.16);
+  --mine:#FF8A55; --mine-soft:rgba(255,138,85,.16);
+  --rec:#FF6B73; --rec-soft:rgba(255,107,115,.16);
+  --conv:#B39DFA; --conv-soft:rgba(179,157,250,.18);
+  --good:#6FCF8E; --good-bg:#18352A; --warn:#F2B35B; --warn-bg:#3A2C14; --focus:#7FB2F0; --on-accent:#0E151B;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.7;padding-inline:clamp(16px,4vw,40px);padding-block:28px 56px}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1,h2,h3{margin:0;text-wrap:balance}
+p{margin:0}
+button,select,input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px}
+.brand .eyebrow{font-size:12px;letter-spacing:.08em;color:var(--ink-3);font-weight:500}
+.brand h1{font-family:var(--display);font-weight:700;font-size:clamp(30px,5vw,44px);line-height:1.05;letter-spacing:-.02em}
+.brand h1 .dot{color:var(--mine)}
+.brand p{color:var(--ink-2);max-width:64ch;margin-top:6px}
+.privacy{font-size:12px;color:var(--ink-3)}
+
+.top-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px;transition:border-color .15s,box-shadow .15s;min-width:0}
+.card.drag{border-color:var(--ref);box-shadow:0 0 0 3px var(--ref-soft)}
+.card h3{font-size:13px;font-weight:700}
+.slot-head{display:flex;align-items:center;gap:10px;min-width:0}
+.chip{font-size:12px;font-weight:700;padding:2px 10px;border-radius:999px;white-space:nowrap}
+.chip.ref{background:var(--ref-soft);color:var(--ref)}
+.fname{font-family:var(--mono);font-size:13px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.badge-sample{font-size:11px;border:1px dashed var(--ink-3);color:var(--ink-3);border-radius:4px;padding:0 6px;white-space:nowrap}
+.wave-wrap{position:relative;height:64px;border-radius:8px;background:var(--surface-2);overflow:hidden;cursor:pointer}
+.wave-wrap.sm{height:44px;background:var(--surface)}
+.wave-wrap canvas{width:100%;height:100%;display:block}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:5px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:14px;white-space:nowrap}
+.btn:hover{border-color:var(--ink-3)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.solid{background:var(--c);border-color:var(--c);color:var(--on-accent);font-weight:500}
+.btn.tone{border-color:var(--c);color:var(--c);font-weight:500}
+.ref-c{--c:var(--ref)} .mine-c{--c:var(--mine)} .rec-c{--c:var(--rec)} .conv-c{--c:var(--conv)}
+.btn svg{width:12px;height:12px;fill:currentColor;flex:none}
+.meta{font-family:var(--mono);font-size:12px;color:var(--ink-3);margin-left:auto}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.hint-s{font-size:12px;color:var(--ink-3);line-height:1.55}
+.err{font-size:13px;color:var(--warn);background:var(--warn-bg);border-radius:8px;padding:8px 12px;line-height:1.6}
+textarea#script{width:100%;min-height:112px;resize:vertical;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-family:var(--mono);font-size:13px;line-height:1.6}
+
+.controls{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;font-size:13px;color:var(--ink-2)}
+.grp{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:transparent;padding:5px 10px;cursor:pointer;font-size:13px;white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.seg button:disabled{opacity:.4;cursor:default}
+select.sel{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:4px 8px;font-size:13px;max-width:100%}
+
+.lines-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 14px;margin-bottom:6px}
+.lines-head h2{font-family:var(--display);font-size:20px;font-weight:700}
+.lines{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 8px;scroll-snap-type:x proximity}
+.line-card{flex:0 0 auto;width:230px;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 10px;cursor:pointer;display:flex;flex-direction:column;gap:3px;scroll-snap-align:start}
+.line-card:hover{border-color:var(--ink-3)}
+.line-card[aria-current="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.line-card .row1{display:flex;align-items:center;gap:8px}
+.line-card .no{font-family:var(--display);font-weight:700;font-size:18px;line-height:1}
+.line-card .tm{font-family:var(--mono);font-size:11px;color:var(--ink-3);margin-left:auto}
+.line-card .tx{font-size:13px;color:var(--ink-2);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;min-height:2.9em;line-height:1.45}
+.line-card .tx.empty{color:var(--ink-3)}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.panel-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px 16px}
+.panel-head h2{font-family:var(--display);font-size:20px;font-weight:700;letter-spacing:-.01em}
+.nav{display:flex;align-items:center;gap:6px}
+.nav .pos{font-family:var(--display);font-weight:700;font-size:20px;min-width:5.5em;text-align:center;font-variant-numeric:tabular-nums}
+.nav .pos small{font-family:var(--mono);font-size:12px;color:var(--ink-3);font-weight:400}
+.iconbtn{border:1px solid var(--line);background:var(--surface);border-radius:8px;width:32px;height:32px;cursor:pointer;display:grid;place-items:center}
+.iconbtn:disabled{opacity:.35;cursor:default}
+.iconbtn svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2}
+
+/* script display: words sized by stress */
+.script-view{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 14px;align-items:center;padding:6px 0 2px}
+.who{font-size:12px;font-weight:700;white-space:nowrap}
+.who.ref{color:var(--ref)} .who.mine{color:var(--mine)}
+.wline{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;min-height:56px;min-width:0}
+.wline.ref{--c:var(--ref);--c-soft:var(--ref-soft)} .wline.mine{--c:var(--mine);--c-soft:var(--mine-soft)}
+.wline .empty{font-size:14px;color:var(--ink-3);align-self:center}
+.word{border:0;background:none;padding:2px 4px;border-radius:6px;cursor:pointer;font-family:var(--display);line-height:1.15;color:var(--ink);display:inline-flex;align-items:baseline}
+.word:hover{background:var(--surface-2)}
+.word.now{background:var(--c-soft)}
+.syl{display:inline-block;transition:font-size .2s}
+.syl.s{color:var(--c);font-weight:800}
+.syl.w{color:var(--ink-2)}
+.syl + .syl{margin-left:1px}
+
+/* recorder */
+.recorder{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:12px;background:var(--surface-2);border-radius:12px;padding:12px}
+@media (max-width:760px){.recorder{grid-template-columns:1fr}}
+.rec-main{display:flex;flex-direction:column;gap:8px;min-width:0}
+.rec-title{font-size:13px;font-weight:700;color:var(--mine)}
+.btn.recbtn{background:var(--rec);border-color:var(--rec);color:var(--on-accent);font-weight:700}
+.btn .dot{width:10px;height:10px;border-radius:50%;background:currentColor;flex:none}
+.meter{height:8px;border-radius:4px;background:var(--surface);overflow:hidden;border:1px solid var(--line)}
+.meter span{display:block;height:100%;width:0;background:var(--rec);transition:width .06s linear}
+.rec-status{font-size:13px;color:var(--ink-2);min-height:1.6em}
+.rec-status.live{color:var(--rec);font-weight:700}
+.hist{font-family:var(--mono);font-size:12px;color:var(--ink-3);line-height:1.6}
+.hist b{color:var(--ink)}
+@keyframes pulse{50%{opacity:.35}}
+.recording .dot{animation:pulse 1s infinite}
+
+.subbar{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;font-size:13px;color:var(--ink-2)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--ink-2);align-items:center;margin-left:auto}
+.legend label{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.sw{display:inline-block;width:22px;height:4px;border-radius:2px}
+.chart{display:grid;grid-template-columns:44px minmax(0,1fr);border-top:1px solid var(--line);padding-top:8px}
+.chart canvas{display:block}
+.scroller{overflow-x:auto;overflow-y:hidden;min-width:0;cursor:crosshair}
+.inner{position:relative}
+.wrow{position:relative;height:46px;border-top:1px solid var(--grid);border-bottom:1px solid var(--grid)}
+.wbtn{position:absolute;top:0;bottom:0;border:0;background:transparent;display:flex;align-items:center;justify-content:center;white-space:nowrap;cursor:pointer;font-family:var(--display);color:var(--ink);border-left:1px dashed var(--line);padding:0 2px;--c:var(--ref)}
+.wbtn:hover,.wbtn.now{background:var(--ref-soft)}
+.axis-note{display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--ink-3)}
+.playhead{position:absolute;top:0;bottom:0;width:2px;background:var(--ink);opacity:.6;pointer-events:none;display:none;z-index:2}
+#ph-wave-ref{background:var(--ref);opacity:.9}
+#ph-wave-mine{background:var(--mine);opacity:.9}
+
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:12px}
+.metric{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.metric .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.metric h3{font-size:13px;font-weight:500;color:var(--ink-2)}
+.pill{font-size:11px;font-weight:700;border-radius:999px;padding:1px 8px;white-space:nowrap}
+.pill.good{background:var(--good-bg);color:var(--good)}
+.pill.warn{background:var(--warn-bg);color:var(--warn)}
+.pill.none{background:var(--surface-2);color:var(--ink-3)}
+.big{font-family:var(--display);font-size:30px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.big small{font-family:var(--body);font-size:13px;font-weight:500;color:var(--ink-3);margin-left:4px}
+.bars{display:flex;flex-direction:column;gap:4px;font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+.bar{display:grid;grid-template-columns:44px 1fr 52px;align-items:center;gap:6px}
+.bar .track{height:6px;background:var(--surface-2);border-radius:3px;overflow:hidden}
+.bar .fill{display:block;height:100%;border-radius:3px}
+.bar .v{text-align:right;font-variant-numeric:tabular-nums}
+.metric .hint{font-size:12px;color:var(--ink-3);line-height:1.55}
+.feedback{display:flex;flex-direction:column;gap:10px;margin:0;padding:0;list-style:none}
+.feedback li{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start}
+.feedback .pill{margin-top:3px}
+
+.guide{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:14px}
+.guide section{background:var(--surface-2);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:8px}
+.guide h3{font-family:var(--display);font-size:17px;font-weight:700}
+.guide p,.guide li{font-size:14px;color:var(--ink-2)}
+.guide ol,.guide ul{margin:0;padding-left:1.3em;display:flex;flex-direction:column;gap:4px}
+.ex{font-family:var(--mono);font-size:13px;color:var(--ink)}
+.ex b{color:var(--ref)}
+.status{font-size:13px;color:var(--ink-2)}
+.voicebar{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:10px 18px;align-items:start;border:1px solid var(--line);border-radius:12px;padding:12px}
+@media (max-width:820px){.voicebar{grid-template-columns:1fr}}
+.vb-col{display:flex;flex-direction:column;gap:8px;min-width:0}
+.vb-lbl{font-size:12px;font-weight:700;color:var(--ink-2);letter-spacing:.04em}
+.keybox{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.keybtn{border:1px solid var(--conv);color:var(--conv);background:var(--surface);border-radius:8px;width:38px;height:34px;cursor:pointer;font-size:18px;font-weight:700;line-height:1}
+.keybtn:disabled{opacity:.35;cursor:default}
+.keyval{font-family:var(--display);font-weight:800;font-size:28px;min-width:2.6em;text-align:center;color:var(--conv);font-variant-numeric:tabular-nums;line-height:1}
+.keyval small{display:block;font-family:var(--body);font-size:11px;font-weight:500;color:var(--ink-3);margin-top:2px}
+.keyscale{position:relative;height:6px;border-radius:3px;background:var(--surface-2);margin-top:2px}
+.keyscale i{position:absolute;top:-3px;width:12px;height:12px;border-radius:50%;transform:translateX(-50%)}
+.keyscale .k-ref{background:var(--ref)} .keyscale .k-mine{background:var(--mine)} .keyscale .k-conv{background:var(--conv);box-shadow:0 0 0 2px var(--surface)}
+.meter.asr span{background:var(--ref);transition:width .2s}
+.heard{color:var(--ink-2)}
+.heard .x{color:var(--warn);text-decoration:underline wavy;text-underline-offset:3px}
+.card .slot-head h3{margin-right:auto}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}.recording .dot{animation:none}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="eyebrow">英語の抑揚・強勢ビジュアライザー</div>
+      <h1>Intonation Lens<span class="dot">.</span></h1>
+      <p>お手本の音声を読み込むと自動で文字起こしし、1文ずつ単語の強勢を文字の大きさで表示します。お手本を聞いたらその場で録音して、抑揚と強弱を重ねて比べられます。</p>
+    </div>
+    <div class="privacy">音声はこのブラウザ内だけで解析され、外部には送信されません。</div>
+  </header>
+
+  <div class="top-grid">
+    <div class="card" id="slot-ref">
+      <div class="slot-head"><span class="chip ref">お手本</span><span class="fname" id="name-ref">—</span></div>
+      <div class="wave-wrap" id="wwrap-ref"><canvas id="wave-ref"></canvas><div class="playhead" id="ph-wave-ref"></div></div>
+      <div class="row">
+        <button class="btn solid ref-c" id="play-ref" type="button"><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg><span>全体を再生</span></button>
+        <label class="btn" for="file-ref">ファイルを選ぶ</label>
+        <input class="vh" type="file" id="file-ref" accept="audio/*,video/*,.mp3,.m4a,.mp4,.wav,.webm,.ogg,.aac,.mov">
+        <span class="meta" id="meta-ref"></span>
+      </div>
+      <div class="err" id="err-ref" hidden></div>
+      <p class="hint-s">ネイティブの音声（MP3・M4A・MP4・WAVなど、3分まで）。ドラッグ＆ドロップでも読み込めます。</p>
+    </div>
+    <div class="card" id="script-card">
+      <div class="slot-head"><h3><label for="script">スクリプト</label></h3><span class="badge-sample" id="script-badge">サンプル</span></div>
+      <div class="row">
+        <button class="btn solid ref-c" id="asr-run" type="button">音声から文字起こし</button>
+        <select class="sel" id="asr-model" aria-label="文字起こしの精度">
+          <option value="Xenova/whisper-tiny.en">速い（tiny）</option>
+          <option value="Xenova/whisper-base.en" selected>標準（base）</option>
+          <option value="Xenova/whisper-small.en">高精度（small・初回の読み込みが重い）</option>
+        </select>
+      </div>
+      <div class="meter asr" aria-hidden="true"><span id="asr-bar"></span></div>
+      <p class="hint-s" id="asr-status"></p>
+      <div class="err" id="asr-host" hidden>このページは Claude（アプリまたは claude.ai）の中で開いているため、文字起こしとマイク録音は使えません（安全設定でモデルのダウンロードとマイクがブロックされます）。スマホ・パソコンとも、Safari や Chrome で <b>https://shiorisan.github.io/intonation-lens/</b> を開くとすべての機能が使えます。</div>
+      <textarea id="script" spellcheck="false">I didn't say that.
+Where are you going?
+It's a beautiful day.</textarea>
+      <p class="hint-s">文字起こしの結果が1文ずつ1行に並びます。聞き間違いはここで直せます（行の数を変えると区切り直します）。</p>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="grp"><span>行の区切り</span>
+      <select class="sel" id="pause">
+        <option value="auto" selected>自動（スクリプトの行数に合わせる）</option>
+        <option value="0.2">短いポーズでも区切る（0.2秒）</option>
+        <option value="0.35">普通（0.35秒）</option>
+        <option value="0.6">長いポーズだけ（0.6秒）</option>
+        <option value="1">かなり長いポーズだけ（1秒）</option>
+      </select>
+    </div>
+    <div class="grp"><span>再生速度</span>
+      <div class="seg" id="speed"><button type="button" data-v="1" aria-pressed="true">1.0×</button><button type="button" data-v="0.75" aria-pressed="false">0.75×</button><button type="button" data-v="0.5" aria-pressed="false">0.5×</button></div>
+    </div>
+    <div class="grp"><span>時間の合わせ方</span>
+      <div class="seg" id="align"><button type="button" data-v="dtw" aria-pressed="true">音節で揃える</button><button type="button" data-v="linear" aria-pressed="false">長さだけ揃える</button></div>
+    </div>
+    <span class="status" id="status" role="status"></span>
+  </div>
+
+  <section>
+    <div class="lines-head"><h2>行リスト</h2><span class="hint-s" id="lines-note"></span></div>
+    <div class="lines" id="lines"></div>
+  </section>
+
+  <div class="panel">
+    <div class="panel-head">
+      <div class="nav">
+        <button class="iconbtn" id="prev" type="button" aria-label="前の行"><svg viewBox="0 0 16 16"><path d="M10 3L5 8l5 5"/></svg></button>
+        <div class="pos" id="pos">—</div>
+        <button class="iconbtn" id="next" type="button" aria-label="次の行"><svg viewBox="0 0 16 16"><path d="M6 3l5 5-5 5"/></svg></button>
+      </div>
+      <div class="grp"><span class="hint-s">練習で流すお手本</span>
+        <div class="seg" id="modelvoice"><button type="button" data-v="orig" aria-pressed="true">オリジナル</button><button type="button" data-v="conv" aria-pressed="false">あなたの声</button></div>
+        <button class="btn" id="lp-both" type="button">お手本 → あなた</button>
+      </div>
+      <div class="grp"><span class="hint-s">単語をクリックで</span>
+        <div class="seg" id="wordmode"><button type="button" data-v="audio" aria-pressed="true">お手本の音声</button><button type="button" data-v="tts" aria-pressed="false">読み上げ</button></div>
+      </div>
+    </div>
+
+    <div class="voicebar">
+      <div class="vb-col">
+        <span class="vb-lbl">この行を聞き比べ</span>
+        <div class="row">
+          <button class="btn tone ref-c" id="lp-ref" type="button"><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg>お手本（オリジナル）</button>
+          <button class="btn tone conv-c" id="lp-conv" type="button"><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg>あなたの声のお手本</button>
+          <button class="btn tone mine-c" id="lp-mine" type="button"><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg>あなたの録音</button>
+        </div>
+        <p class="hint-s" id="key-info"></p>
+      </div>
+      <div class="vb-col">
+        <span class="vb-lbl">声の高さ（キー・半音）</span>
+        <div class="keybox">
+          <button class="keybtn" id="key-down" type="button" aria-label="キーを1つ下げる">♭</button>
+          <output class="keyval" id="key-val" aria-live="polite">0</output>
+          <button class="keybtn" id="key-up" type="button" aria-label="キーを1つ上げる">♯</button>
+          <button class="btn" id="key-auto" type="button"title="録音した声の高さに合わせる">自動</button>
+          <button class="btn" id="key-orig" type="button">原曲キー</button>
+        </div>
+        <span class="vb-lbl">声質（声の太さ・響き）</span>
+        <div class="keybox">
+          <button class="keybtn" id="fmt-down" type="button" aria-label="声を太く（響きを低く）">−</button>
+          <output class="keyval" id="fmt-val" aria-live="polite">100</output>
+          <button class="keybtn" id="fmt-up" type="button" aria-label="声を細く（響きを高く）">+</button>
+          <button class="btn" id="fmt-auto" type="button" title="録音した声質に合わせる">自動</button>
+          <button class="btn" id="fmt-orig" type="button">お手本のまま</button>
+        </div>
+        <div class="keyscale" id="key-scale" aria-hidden="true"></div>
+        <p class="hint-s" id="key-scale-note"></p>
+      </div>
+    </div>
+
+    <div class="script-view" id="script-view">
+      <span class="who ref">お手本</span><div class="wline ref" id="wl-ref"></div>
+      <span class="who mine">あなた</span><div class="wline mine" id="wl-mine"></div>
+    </div>
+
+    <div class="recorder">
+      <div class="rec-main">
+        <div class="rec-title" id="rec-title">あなたの録音</div>
+        <div class="row">
+          <button class="btn recbtn" id="rec-model" type="button"><span class="dot"></span>お手本を聞いてから録音</button>
+          <button class="btn tone rec-c" id="rec-now" type="button"><span class="dot"></span>すぐに録音</button>
+          <label class="btn" for="file-take">ファイルから</label>
+          <input class="vh" type="file" id="file-take" accept="audio/*,video/*,.mp3,.m4a,.mp4,.wav,.webm,.ogg,.aac,.mov">
+        </div>
+        <div class="meter" aria-hidden="true"><span id="lvl"></span></div>
+        <div class="rec-status" id="rec-status" role="status">お手本を聞いたあと、同じように読んでください。話し終えて1秒ほど黙ると自動で止まります（Rキーでも開始・停止）。</div>
+        <div class="err" id="mic-err" hidden></div>
+      </div>
+      <div class="rec-main">
+        <div class="wave-wrap sm" id="wwrap-mine"><canvas id="wave-mine"></canvas><div class="playhead" id="ph-wave-mine"></div></div>
+        <div class="hist" id="hist">この行はまだ録音していません。</div>
+      </div>
+    </div>
+
+    <div class="subbar">
+      <div class="grp"><span>表示</span>
+        <div class="seg" id="view"><button type="button" data-v="line" aria-pressed="true">1行ずつ</button><button type="button" data-v="all" aria-pressed="false">全体を横スクロール</button></div>
+      </div>
+      <div class="grp"><span>横の拡大</span>
+        <div class="seg" id="zoom"><button type="button" data-v="fit" aria-pressed="true">画面幅</button><button type="button" data-v="150" aria-pressed="false">小</button><button type="button" data-v="300" aria-pressed="false">中</button><button type="button" data-v="500" aria-pressed="false">大</button></div>
+      </div>
+      <div class="legend">
+        <label><input type="checkbox" id="show-ref" checked><span class="sw" style="background:var(--ref)"></span>お手本</label>
+        <label><input type="checkbox" id="show-mine" checked><span class="sw" style="background:var(--mine)"></span>あなた</label>
+        <span>線の太さ＝声の強さ</span>
+      </div>
+    </div>
+    <div class="chart" id="chart">
+      <canvas id="c-axis"></canvas>
+      <div class="scroller" id="scroller">
+        <div class="inner" id="inner">
+          <canvas id="c-pitch"></canvas>
+          <div class="wrow" id="wrow"></div>
+          <canvas id="c-stress"></canvas>
+          <canvas id="c-int"></canvas>
+          <div class="playhead" id="ph-chart"></div>
+        </div>
+      </div>
+    </div>
+    <div class="axis-note">
+      <span>上段：声の高さ（半音。0＝その人の平均の高さ）</span>
+      <span>単語：お手本の単語の位置（推定）。クリックで発音</span>
+      <span>中段：音節の山（●強勢／○弱い音節）</span>
+      <span>下段：声の強さ（dB）</span>
+      <span>← → で行を移動</span>
+    </div>
+  </div>
+
+  <div class="metrics" id="metrics"></div>
+
+  <div class="panel">
+    <div class="panel-head"><h2>この行の練習ポイント</h2><span class="status" id="fb-note"></span></div>
+    <ul class="feedback" id="feedback"></ul>
+  </div>
+
+  <div class="guide">
+    <section>
+      <h3>文字の大きさ＝強勢</h3>
+      <p>スクリプトの単語は、強く発音されている音節ほど大きく太く表示されます。お手本とあなたの行を上下で見比べて、大きい文字の位置が同じかを確認しましょう。</p>
+      <p class="ex">I didn't <b>SAY</b> that. ／ It's a <b>BEAU</b>tiful <b>DAY</b>.</p>
+    </section>
+    <section>
+      <h3>弱い音節はしっかり弱く</h3>
+      <p>a, the, to, and, of などの機能語は短く弱く発音されます。日本語は各音節をほぼ同じ強さで読むため、文字の大きさがそろいやすく、母音を足すと山の数も増えます（did → ディド）。</p>
+    </section>
+    <section>
+      <h3>文末の上げ下げ</h3>
+      <ul>
+        <li>平叙文・Wh疑問文：最後の強勢から下がる</li>
+        <li>Yes/No疑問文：最後に上がる</li>
+        <li>日本語話者は高さの幅が狭くなりがち。上段カーブの高低差をお手本に近づけましょう。</li>
+      </ul>
+    </section>
+    <section>
+      <h3>練習の流れ</h3>
+      <ol>
+        <li>お手本の音声を読み込む（自動で文字起こしされ、1文ずつの行に分かれます）</li>
+        <li>行を選び、大きい文字の単語をクリックして発音を確認</li>
+        <li>「お手本を聞いてから録音」で、すぐにまねして読む</li>
+        <li>文字の大きさと数値を見比べ、同じ行を何回か録り直す（一致度の記録が残ります）</li>
+      </ol>
+    </section>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+const SR = 16000, HOP = 160, WIN = 640, FPS = SR / HOP, MAX_SEC = 180;
+const $ = (id) => document.getElementById(id);
+const audios = { ref: new Audio(), mine: new Audio(), conv: new Audio() };
+const PLAYERS = ["ref", "mine", "conv"];
+const S = { sel: 0, view: "line", zoom: "fit", align: "dtw", pause: "auto", speed: 1, wordmode: "audio", modelVoice: "orig", key: null, formant: null, show: { ref: true, mine: true } };
+let REF = null;
+let takes = {};
+const pairCache = new Map(), wordCache = new Map();
+let geo = null, takeSeq = 0;
+
+/* ---------- utils ---------- */
+function movingAvg(a, w) {
+  const n = a.length, out = new Float32Array(n), h = Math.floor(w / 2);
+  let s = 0, lo = 0, hi = -1;
+  for (let i = 0; i < n; i++) {
+    const L = Math.max(0, i - h), R = Math.min(n - 1, i + h);
+    while (hi < R) s += a[++hi];
+    while (lo < L) s -= a[lo++];
+    out[i] = s / (hi - lo + 1);
+  }
+  return out;
+}
+function median(arr) { if (!arr.length) return NaN; const s = arr.slice().sort((a, b) => a - b); const m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; }
+function pct(arr, p) { if (!arr.length) return NaN; const s = arr.slice().sort((a, b) => a - b); return s[Math.min(s.length - 1, Math.max(0, Math.round(p * (s.length - 1))))]; }
+function mean(a) { return a.length ? a.reduce((x, y) => x + y, 0) / a.length : NaN; }
+function std(a) { const m = mean(a); return a.length ? Math.sqrt(mean(a.map(v => (v - m) ** 2))) : 0; }
+function cssVar(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+function fmt(t, d = 1) { const m = Math.floor(t / 60), s = t - m * 60; return m + ":" + (s < 10 ? "0" : "") + s.toFixed(d); }
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+function scriptLines() { return $("script").value.split(/\r?\n/).map(s => s.trim()).filter(Boolean); }
+function setStatus(t) { $("status").textContent = t; }
+
+/* ---------- decode / resample ---------- */
+async function resample(buffer) {
+  const len = Math.min(buffer.duration, MAX_SEC);
+  const off = new OfflineAudioContext(1, Math.max(1, Math.ceil(len * SR)), SR);
+  const src = off.createBufferSource(); src.buffer = buffer; src.connect(off.destination); src.start(0);
+  const r = await off.startRendering();
+  return r.getChannelData(0);
+}
+async function decodeFile(file) {
+  const buf = await file.arrayBuffer();
+  const AC = window.AudioContext || window.webkitAudioContext;
+  const ctx = new AC();
+  let ab;
+  try { ab = await ctx.decodeAudioData(buf); } finally { try { ctx.close(); } catch (e) {} }
+  return { samples: await resample(ab), truncated: ab.duration > MAX_SEC };
+}
+
+/* ---------- analysis: YIN pitch + intensity + syllable nuclei ---------- */
+function analyze(x) {
+  const N = Math.max(0, Math.floor((x.length - WIN) / HOP) + 1);
+  const db = new Float32Array(N), f0 = new Float32Array(N), ap = new Float32Array(N).fill(1);
+  for (let i = 0; i < N; i++) {
+    const s = i * HOP; let sum = 0;
+    for (let j = 0; j < WIN; j++) { const v = x[s + j]; sum += v * v; }
+    db[i] = 10 * Math.log10(sum / WIN + 1e-12);
+  }
+  const env = movingAvg(db, 7);
+  const sorted = Array.from(env).sort((a, b) => a - b);
+  const maxEnv = sorted.length ? sorted[Math.floor((sorted.length - 1) * 0.995)] : 0;
+  const gate = maxEnv - 35;
+  const tauMax = Math.floor(SR / 70), tauMin = Math.floor(SR / 500), W = WIN - tauMax - 1;
+  const d = new Float32Array(tauMax + 1), c = new Float32Array(tauMax + 1);
+  for (let i = 0; i < N; i++) {
+    if (db[i] < gate) continue;
+    const s = i * HOP;
+    for (let tau = 1; tau <= tauMax; tau++) {
+      let sum = 0;
+      for (let j = 0; j < W; j++) { const df = x[s + j] - x[s + j + tau]; sum += df * df; }
+      d[tau] = sum;
+    }
+    let run = 0; c[0] = 1;
+    for (let tau = 1; tau <= tauMax; tau++) { run += d[tau]; c[tau] = run > 0 ? d[tau] * tau / run : 1; }
+    let tau = -1;
+    for (let t = tauMin; t <= tauMax; t++) {
+      if (c[t] < 0.15) { while (t + 1 <= tauMax && c[t + 1] < c[t]) t++; tau = t; break; }
+    }
+    if (tau < 0) { let best = Infinity; for (let t = tauMin; t <= tauMax; t++) if (c[t] < best) { best = c[t]; tau = t; } }
+    let shift = 0;
+    if (tau > tauMin && tau < tauMax) {
+      const a = c[tau - 1], b = c[tau], cc = c[tau + 1], den = a - 2 * b + cc;
+      if (den) shift = Math.max(-1, Math.min(1, 0.5 * (a - cc) / den));
+    }
+    f0[i] = SR / (tau + shift); ap[i] = c[tau];
+  }
+  const voiced = new Uint8Array(N);
+  for (let i = 0; i < N; i++) voiced[i] = (ap[i] < 0.3 && db[i] >= maxEnv - 30 && f0[i] >= 65 && f0[i] <= 520) ? 1 : 0;
+  for (let i = 0; i < N;) {
+    if (!voiced[i]) { i++; continue; }
+    let j = i; while (j < N && voiced[j]) j++;
+    if (j - i < 4) for (let k = i; k < j; k++) voiced[k] = 0;
+    i = j;
+  }
+  const vIdx = []; for (let i = 0; i < N; i++) if (voiced[i]) vIdx.push(i);
+  const fv = vIdx.map(i => f0[i]), fixed = fv.slice();
+  for (let k = 0; k < fv.length; k++) {
+    const lm = median(fv.slice(Math.max(0, k - 12), k + 13)), r = fv[k] / lm;
+    if (r > 1.8) fixed[k] = fv[k] / 2; else if (r < 0.56) fixed[k] = fv[k] * 2;
+  }
+  const smooth = fixed.map((v, k) => median(fixed.slice(Math.max(0, k - 2), k + 3)));
+  vIdx.forEach((i, k) => { f0[i] = smooth[k]; });
+  const medF = median(smooth);
+  const st = new Float32Array(N).fill(NaN);
+  for (const i of vIdx) st[i] = 12 * Math.log2(f0[i] / medF);
+
+  const gate2 = maxEnv - 35, e9 = movingAvg(db, 9);
+  let peaks = [];
+  for (let i = 1; i < N - 1; i++) {
+    if (e9[i] < gate2 + 6) continue;
+    let isMax = true;
+    for (let k = -5; k <= 5 && isMax; k++) { const j = i + k; if (k && j >= 0 && j < N && e9[j] > e9[i]) isMax = false; }
+    if (!isMax) continue;
+    let v = false; for (let k = -4; k <= 4; k++) if (voiced[i + k]) { v = true; break; }
+    if (!v) continue;
+    if (peaks.length && i - peaks[peaks.length - 1] < 3) continue;
+    peaks.push(i);
+  }
+  const prom = (list, k) => {
+    const i = list[k], L = k ? list[k - 1] : Math.max(0, i - 60), R = k < list.length - 1 ? list[k + 1] : Math.min(N - 1, i + 60);
+    let lv = Infinity, rv = Infinity;
+    for (let j = L; j <= i; j++) lv = Math.min(lv, e9[j]);
+    for (let j = i; j <= R; j++) rv = Math.min(rv, e9[j]);
+    return e9[i] - Math.max(lv, rv);
+  };
+  for (let guard = 0; guard < 50; guard++) {
+    const keep = [];
+    for (let k = 0; k < peaks.length; k++) {
+      const prevClose = k && peaks[k] - peaks[k - 1] < 10 && e9[peaks[k]] < e9[peaks[k - 1]];
+      const nextClose = k < peaks.length - 1 && peaks[k + 1] - peaks[k] < 10 && e9[peaks[k]] <= e9[peaks[k + 1]];
+      if (prom(peaks, k) < 2 || prevClose || nextClose) continue;
+      keep.push(peaks[k]);
+    }
+    if (!keep.length && peaks.length) keep.push(peaks.reduce((a, b) => e9[b] > e9[a] ? b : a));
+    if (keep.length === peaks.length) break;
+    peaks = keep;
+  }
+  const rawNuclei = peaks.map(i => {
+    let pm = NaN;
+    for (let k = -6; k <= 6; k++) { const v = st[i + k]; if (!isNaN(v) && (isNaN(pm) || v > pm)) pm = v; }
+    let l = i, r = i; const th = e9[i] - 6;
+    while (l > 0 && e9[l - 1] > th && i - l < 40) l--; while (r < N - 1 && e9[r + 1] > th && r - i < 40) r++;
+    return { i, loud: e9[i] - maxEnv, pitch: pm, dur: (r - l + 1) / FPS };
+  });
+  return { N, env, maxEnv, st, voiced, medF, dur: x.length / SR, rawNuclei };
+}
+
+/* ---------- line segmentation by pauses ---------- */
+function segment(an, pauseSec) {
+  const N = an.N, th = an.maxEnv - 32, pf = Math.round(pauseSec * FPS);
+  let runs = [];
+  for (let i = 0; i < N;) {
+    if (an.env[i] <= th) { i++; continue; }
+    let j = i; while (j < N && an.env[j] > th) j++;
+    if (j - i >= 5) runs.push({ s: i, e: j - 1 });
+    i = j;
+  }
+  const hasNuc = (s, e) => an.rawNuclei.some(n => n.i >= s && n.i <= e);
+  runs = runs.filter(r => hasNuc(r.s, r.e) || r.e - r.s > 20);
+  if (!runs.length) return [{ a: 0, b: Math.max(0, N - 1) }];
+  const joined = [];
+  let cur = { s: runs[0].s, e: runs[0].e, gaps: [] };
+  for (let k = 1; k < runs.length; k++) {
+    const r = runs[k], gap = r.s - cur.e - 1;
+    if (gap < pf) { cur.gaps.push({ s: cur.e + 1, e: r.s - 1, len: gap }); cur.e = r.e; }
+    else { joined.push(cur); cur = { s: r.s, e: r.e, gaps: [] }; }
+  }
+  joined.push(cur);
+  const out = [];
+  const split = (sg) => {
+    if ((sg.e - sg.s) / FPS > 12 && sg.gaps.length) {
+      const g = sg.gaps.reduce((a, b) => b.len > a.len ? b : a);
+      split({ s: sg.s, e: g.s - 1, gaps: sg.gaps.filter(x => x.e < g.s) });
+      split({ s: g.e + 1, e: sg.e, gaps: sg.gaps.filter(x => x.s > g.e) });
+    } else out.push(sg);
+  };
+  joined.forEach(split);
+  const segs = out;
+  for (let guard = 0; guard < 200 && segs.length > 1; guard++) {
+    const k = segs.findIndex(s => (s.e - s.s) / FPS < 0.45);
+    if (k < 0) break;
+    const gl = k ? segs[k].s - segs[k - 1].e : Infinity, gr = k < segs.length - 1 ? segs[k + 1].s - segs[k].e : Infinity;
+    if (gl <= gr) { segs[k - 1].e = segs[k].e; segs.splice(k, 1); } else { segs[k + 1].s = segs[k].s; segs.splice(k, 1); }
+  }
+  return segs.map((s, k) => {
+    const prevE = k ? segs[k - 1].e : -1, nextS = k < segs.length - 1 ? segs[k + 1].s : N;
+    return { a: Math.max(0, prevE + 1, s.s - 8), b: Math.min(N - 1, nextS - 1, s.e + 8) };
+  });
+}
+function autoSegs(an, n) {
+  if (!n) return segment(an, 0.35);
+  let best = null, bd = Infinity;
+  for (const t of [1.5, 1.2, 1.0, 0.8, 0.65, 0.5, 0.4, 0.32, 0.25, 0.2, 0.15, 0.12, 0.09]) {
+    const s = segment(an, t), dd = Math.abs(s.length - n);
+    if (dd < bd) { bd = dd; best = s; }
+    if (dd === 0) break;
+  }
+  return best;
+}
+function speechBounds(an) {
+  const th = an.maxEnv - 32;
+  let a = 0, b = an.N - 1;
+  while (a < an.N && an.env[a] <= th) a++;
+  while (b > a && an.env[b] <= th) b--;
+  if (a >= b) return { a: 0, b: Math.max(0, an.N - 1) };
+  return { a: Math.max(0, a - 8), b: Math.min(an.N - 1, b + 8) };
+}
+function scoreNuclei(nuclei) {
+  if (!nuclei.length) return nuclei;
+  const zs = (key) => { const vals = nuclei.map(n => n[key]).filter(v => !isNaN(v)); const m = mean(vals), sd = std(vals) || 1; return (v) => isNaN(v) ? 0 : (v - m) / sd; };
+  const zl = zs("loud"), zp = zs("pitch"), zd = zs("dur");
+  nuclei.forEach(n => { n.s = zl(n.loud) + 0.6 * zp(n.pitch) + 0.4 * zd(n.dur); });
+  const mn = Math.min(...nuclei.map(n => n.s)), mx = Math.max(...nuclei.map(n => n.s));
+  nuclei.forEach(n => { n.norm = mx > mn ? (n.s - mn) / (mx - mn) : 1; n.strong = n.s > 0.35; });
+  if (!nuclei.some(n => n.strong)) nuclei.reduce((p, q) => q.s > p.s ? q : p).strong = true;
+  return nuclei;
+}
+function segStats(an, seg) {
+  const nuclei = scoreNuclei(an.rawNuclei.filter(n => n.i >= seg.a && n.i <= seg.b).map(n => Object.assign({}, n)));
+  const gate = an.maxEnv - 35, stV = [], dbV = [];
+  let s0 = -1, s1 = -1;
+  for (let i = seg.a; i <= seg.b; i++) {
+    if (!isNaN(an.st[i])) stV.push(an.st[i]);
+    if (an.env[i] > gate) { dbV.push(an.env[i]); if (s0 < 0) s0 = i; s1 = i; }
+  }
+  const strong = nuclei.filter(n => n.strong), weak = nuclei.filter(n => !n.strong);
+  const contrast = strong.length && weak.length ? mean(strong.map(n => n.loud)) - mean(weak.map(n => n.loud)) : (dbV.length ? (pct(dbV, .9) - pct(dbV, .1)) / 2 : NaN);
+  const tail = [];
+  for (let i = Math.round(seg.b - (seg.b - seg.a) * 0.35); i <= seg.b; i++) if (!isNaN(an.st[i])) tail.push(an.st[i]);
+  let finalMove = 0;
+  if (tail.length >= 8) { const t3 = Math.floor(tail.length / 3); finalMove = mean(tail.slice(-t3)) - Math.max(...tail.slice(0, t3 * 2)); }
+  return { nuclei, range: stV.length > 5 ? pct(stV, .9) - pct(stV, .1) : NaN, contrast, finalMove, speechDur: s0 >= 0 ? (s1 - s0) / FPS : 0 };
+}
+
+/* ---------- alignment ---------- */
+function linearMap(RA, MA) {
+  const nR = RA.b - RA.a + 1, nM = MA.b - MA.a + 1, out = new Float32Array(nR);
+  for (let k = 0; k < nR; k++) out[k] = MA.a + (nR > 1 ? k * (nM - 1) / (nR - 1) : 0);
+  return out;
+}
+function dtwMap(RA, MA) {
+  const nR = RA.b - RA.a + 1, nM = MA.b - MA.a + 1;
+  if (nR < 3 || nM < 3) return linearMap(RA, MA);
+  const step = Math.max(1, Math.ceil(Math.max(nR, nM) / 600));
+  const feat = (A, n) => {
+    const m = Math.ceil(n / step), v = new Float32Array(m), vo = new Float32Array(m);
+    for (let i = 0; i < m; i++) {
+      let s = 0, c = 0, cv = 0;
+      for (let j = i * step; j < Math.min(n, (i + 1) * step); j++) { s += A.an.env[A.a + j]; cv += A.an.voiced[A.a + j]; c++; }
+      v[i] = s / c; vo[i] = cv / c;
+    }
+    const arr = Array.from(v), mu = mean(arr), sd = std(arr) || 1;
+    const z = v.map(x => (x - mu) / sd), dz = new Float32Array(m);
+    for (let i = 0; i < m; i++) dz[i] = z[Math.min(m - 1, i + 1)] - z[Math.max(0, i - 1)];
+    return { z, dz, vo, m };
+  };
+  const X = feat(RA, nR), Y = feat(MA, nM), n = X.m, m = Y.m;
+  const D = new Float32Array(n * m).fill(Infinity), band = 0.3, pen = 0.15;
+  for (let i = 0; i < n; i++) for (let j = 0; j < m; j++) {
+    if (Math.abs(i / (n - 1) - j / (m - 1)) > band) continue;
+    const dd = Math.abs(X.z[i] - Y.z[j]) + 0.7 * Math.abs(X.dz[i] - Y.dz[j]) + 0.6 * Math.abs(X.vo[i] - Y.vo[j]);
+    if (!i && !j) { D[0] = dd; continue; }
+    let best = Infinity;
+    if (i && j) best = D[(i - 1) * m + j - 1];
+    if (i) best = Math.min(best, D[(i - 1) * m + j] + pen);
+    if (j) best = Math.min(best, D[i * m + j - 1] + pen);
+    D[i * m + j] = best + dd;
+  }
+  if (!isFinite(D[n * m - 1])) return linearMap(RA, MA);
+  const sumJ = new Float32Array(n), cnt = new Float32Array(n);
+  let i = n - 1, j = m - 1;
+  while (true) {
+    sumJ[i] += j; cnt[i]++;
+    if (!i && !j) break;
+    if (!i) { j--; continue; } if (!j) { i--; continue; }
+    const dg = D[(i - 1) * m + j - 1], up = D[(i - 1) * m + j] + pen, lf = D[i * m + j - 1] + pen;
+    if (dg <= up && dg <= lf) { i--; j--; } else if (up <= lf) i--; else j--;
+  }
+  const out = new Float32Array(nR);
+  for (let k = 0; k < nR; k++) { const ii = Math.min(n - 1, Math.floor(k / step)); out[k] = (sumJ[ii] / cnt[ii]) * step + (k - ii * step) * (nM / nR); }
+  const sm = movingAvg(out, 9);
+  for (let k = 0; k < nR; k++) sm[k] = Math.max(k ? sm[k - 1] : 0, Math.min(nM - 1, Math.max(0, sm[k])));
+  for (let k = 0; k < nR; k++) sm[k] += MA.a;
+  return sm;
+}
+
+/* ---------- words & syllables ---------- */
+const DIGRAPHS = ["th", "ch", "sh", "ph", "wh", "gh", "qu", "ng"];
+function syllabify(tok) {
+  const m = tok.match(/^([^A-Za-z]*)(.*?)([^A-Za-z]*)$/);
+  const lead = m[1], core = m[2], trail = m[3];
+  if (!core) return [tok];
+  const lw = core.toLowerCase();
+  const isV = (k) => { const c = lw[k]; return "aeiou".includes(c) || (c === "y" && k > 0 && !"aeiou".includes(lw[k - 1])); };
+  const groups = [];
+  for (let k = 0; k < lw.length;) {
+    if (!isV(k)) { k++; continue; }
+    let e = k; while (e < lw.length && isV(e)) e++;
+    groups.push({ s: k, e }); k = e;
+  }
+  if (groups.length > 1) {
+    const last = groups[groups.length - 1], L = lw.length;
+    if (lw.endsWith("e") && last.s === L - 1 && !(lw.endsWith("le") && L > 2 && !"aeiou".includes(lw[L - 3]))) groups.pop();
+    else if (lw.endsWith("ed") && last.s === L - 2 && !/[td]ed$/.test(lw)) groups.pop();
+    else if (lw.endsWith("es") && last.s === L - 2 && !/(s|x|z|ch|sh|ge|ce)es$/.test(lw)) groups.pop();
+  }
+  if (groups.length <= 1) return [tok];
+  const cuts = [];
+  for (let g = 0; g < groups.length - 1; g++) {
+    const cs = groups[g].e, ce = groups[g + 1].s, n = ce - cs;
+    let cut;
+    if (n <= 1) cut = cs;
+    else if (n === 2 && DIGRAPHS.includes(lw.substr(cs, 2))) cut = cs;
+    else if (lw.substr(cs, 2) === "ck") cut = cs + 2;
+    else cut = cs + 1;
+    cuts.push(cut);
+  }
+  const parts = []; let p = 0;
+  for (const c of cuts) { parts.push(core.slice(p, c)); p = c; }
+  parts.push(core.slice(p));
+  parts[0] = lead + parts[0]; parts[parts.length - 1] += trail;
+  return parts.filter(Boolean);
+}
+function tokenize(line) {
+  return line.split(/\s+/).filter(Boolean).map(t => ({ text: t, syl: syllabify(t), clean: t.replace(/[^A-Za-z'\-]/g, "") }));
+}
+function sylStrength(an, nuclei, a, b) {
+  let best = null;
+  for (const n of nuclei) if (n.i >= a && n.i <= b && (!best || n.norm > best.norm)) best = n;
+  if (best) return { norm: best.norm, strong: best.strong };
+  let s = 0, c = 0; for (let i = Math.max(0, a); i <= Math.min(an.N - 1, b); i++) { s += an.env[i]; c++; }
+  const rel = c ? s / c - an.maxEnv : -40;
+  return { norm: Math.max(0, Math.min(0.35, (rel + 25) / 25 * 0.35)), strong: false };
+}
+function splitSyl(parts, a, b, an, nuc) {
+  const n = parts.length, inside = nuc.filter(x => x.i >= a && x.i <= b);
+  if (inside.length === n) {
+    const bounds = [a]; for (let q = 1; q < n; q++) bounds.push(Math.round((inside[q - 1].i + inside[q].i) / 2)); bounds.push(b);
+    return parts.map((t, q) => ({ t, a: bounds[q], b: bounds[q + 1], norm: inside[q].norm, strong: inside[q].strong }));
+  }
+  return parts.map((t, q) => {
+    const sa = Math.round(a + (b - a) * q / n), sb = Math.round(a + (b - a) * (q + 1) / n);
+    return Object.assign({ t, a: sa, b: sb }, sylStrength(an, nuc, sa, sb));
+  });
+}
+function wordTiming(i) {
+  const text = scriptLines()[i];
+  if (!REF || !text || !REF.segs[i]) return null;
+  const key = i + "|" + text;
+  if (wordCache.has(key)) return wordCache.get(key);
+  const an = REF.an, seg = REF.segs[i], nuc = REF.stats[i].nuclei.slice().sort((x, y) => x.i - y.i);
+  const words = tokenize(text);
+  if (!words.length) return null;
+  const tl = REF.transcript && REF.transcript[i];
+  if (tl && tl.words.length === words.length && scriptLines().length === REF.transcript.length) {
+    let prevB = seg.a;
+    const out = words.map((w, k) => {
+      const a = Math.max(prevB, Math.min(seg.b - 2, tl.words[k].a));
+      const b = Math.max(a + 2, Math.min(seg.b, tl.words[k].b));
+      prevB = b;
+      const syl = splitSyl(w.syl, a, b, an, nuc);
+      return { text: w.text, clean: w.clean, a, b, syl, norm: Math.max(...syl.map(s => s.norm)), strong: syl.some(s => s.strong) };
+    });
+    wordCache.set(key, out);
+    return out;
+  }
+  const C = words.reduce((s, w) => s + w.syl.length, 0);
+  const gate = an.maxEnv - 30;
+  let s0 = seg.a, s1 = seg.b;
+  while (s0 < seg.b && an.env[s0] < gate) s0++;
+  while (s1 > s0 && an.env[s1] < gate) s1--;
+  if (s1 - s0 < 5) { s0 = seg.a; s1 = seg.b; }
+  // time warp: syllable position (0..1) -> frame, anchored on detected syllable nuclei
+  const pts = [[0, s0]];
+  nuc.forEach((n, k) => { if (n.i > s0 && n.i < s1) pts.push([(k + 0.5) / nuc.length, n.i]); });
+  pts.push([1, s1]);
+  const T = (u) => { for (let k = 1; k < pts.length; k++) if (u <= pts[k][0]) { const [u0, f0] = pts[k - 1], [u1, f1] = pts[k]; return f0 + (u1 > u0 ? (u - u0) / (u1 - u0) : 0) * (f1 - f0); } return s1; };
+  const direct = nuc.length === C;
+  const B = [s0]; let cum = 0;
+  words.forEach((w, k) => {
+    cum += w.syl.length;
+    if (k === words.length - 1) { B.push(s1); return; }
+    let f;
+    if (direct) { const a = nuc[cum - 1].i, b = nuc[cum].i; f = a; let mv = Infinity; for (let q = a; q <= b; q++) if (an.env[q] < mv) { mv = an.env[q]; f = q; } }
+    else {
+      const g = Math.round(T(cum / C)); f = g; let mv = Infinity;
+      for (let q = g - 8; q <= g + 8; q++) if (q > B[B.length - 1] + 2 && q < s1 && an.env[q] < mv) { mv = an.env[q]; f = q; }
+    }
+    B.push(Math.max(B[B.length - 1] + 2, Math.min(s1 - 1, f)));
+  });
+  cum = 0;
+  const out = words.map((w, k) => {
+    const a = B[k], b = B[k + 1], n = w.syl.length;
+    const sb = [a];
+    for (let q = 1; q < n; q++) {
+      const f = direct ? Math.round((nuc[cum + q - 1].i + nuc[cum + q].i) / 2) : Math.round(T((cum + q) / C));
+      sb.push(Math.max(sb[sb.length - 1] + 1, Math.min(b - 1, f)));
+    }
+    sb.push(b);
+    const syl = w.syl.map((t, q) => {
+      const st = direct ? { norm: nuc[cum + q].norm, strong: nuc[cum + q].strong } : sylStrength(an, nuc, sb[q], sb[q + 1]);
+      return Object.assign({ t, a: sb[q], b: sb[q + 1] }, st);
+    });
+    cum += n;
+    return { text: w.text, clean: w.clean, a, b, syl, norm: Math.max(...syl.map(s => s.norm)), strong: syl.some(s => s.strong) };
+  });
+  wordCache.set(key, out);
+  return out;
+}
+function mineWordStrengths(i, words) {
+  const p = getPair(i); if (!p || !words) return null;
+  const at = (f) => p.map[Math.max(0, Math.min(p.map.length - 1, f - p.rs.a))];
+  return words.map(w => ({
+    a: Math.round(at(w.a)), b: Math.round(at(w.b)),
+    syl: w.syl.map(s => Object.assign({ t: s.t }, sylStrength(p.man, p.mst.nuclei, Math.round(at(s.a)), Math.round(at(s.b)))))
+  }));
+}
+
+/* ---------- pairs (model line ↔ your take) ---------- */
+function lineCount() { return REF ? REF.segs.length : 0; }
+function getPair(i) {
+  const tk = takes[i]; if (!REF || !tk || !REF.segs[i]) return null;
+  const key = i + ":" + S.align + ":" + tk.id + ":" + REF.segs[i].a + "-" + REF.segs[i].b;
+  if (pairCache.has(key)) return pairCache.get(key);
+  const rs = REF.segs[i], ms = tk.seg;
+  const map = (S.align === "dtw" ? dtwMap : linearMap)({ an: REF.an, a: rs.a, b: rs.b }, { an: tk.an, a: ms.a, b: ms.b });
+  const p = { i, map, rs, ms, rst: REF.stats[i], mst: tk.stats, man: tk.an };
+  p.cmp = compare(p);
+  pairCache.set(key, p);
+  return p;
+}
+function pairMineToRef(p, m) {
+  let best = 0, bd = Infinity;
+  for (let k = 0; k < p.map.length; k++) { const d = Math.abs(p.map[k] - m); if (d < bd) { bd = d; best = k; } }
+  return p.rs.a + best;
+}
+function compare(p) {
+  const R = REF.an, M = p.man, xs = [], ys = [];
+  for (let k = 0; k < p.map.length; k++) {
+    const r = R.st[p.rs.a + k], mm = M.st[Math.round(p.map[k])];
+    if (!isNaN(r) && !isNaN(mm)) { xs.push(r); ys.push(mm); }
+  }
+  let corr = NaN;
+  if (xs.length > 10) {
+    const mx = mean(xs), my = mean(ys); let sxx = 0, se = 0;
+    for (let i = 0; i < xs.length; i++) { const dx = xs[i] - mx, dy = ys[i] - my; sxx += dx * dx; se += (dx - dy) ** 2; }
+    corr = Math.max(0, 1 - Math.sqrt(se / xs.length) / (Math.sqrt(sxx / xs.length) || 1));
+  }
+  const refStrong = p.rst.nuclei.filter(n => n.strong);
+  const mineT = p.mst.nuclei.filter(n => n.strong).map(n => pairMineToRef(p, n.i) / FPS);
+  let hit = 0;
+  for (const n of refStrong) if (mineT.some(t => Math.abs(t - n.i / FPS) < 0.15)) hit++;
+  return { corr, hit, refStrongN: refStrong.length };
+}
+function segsFromTranscript() {
+  const T = REF.transcript, N = REF.an.N;
+  return T.map((l, i) => {
+    const first = l.words[0].a, last = l.words[l.words.length - 1].b;
+    let a = Math.max(0, first - 12), b = Math.min(N - 1, last + 12);
+    if (i) a = Math.max(a, Math.round((T[i - 1].words[T[i - 1].words.length - 1].b + first) / 2));
+    if (i < T.length - 1) b = Math.min(b, Math.round((last + T[i + 1].words[0].a) / 2) - 1);
+    if (b < a + 6) b = Math.min(N - 1, a + 6);
+    return { a, b };
+  });
+}
+function resegment() {
+  if (!REF) return;
+  const useT = REF.transcript && S.pause === "auto" && scriptLines().length === REF.transcript.length;
+  REF.segs = useT ? segsFromTranscript() : S.pause === "auto" ? autoSegs(REF.an, scriptLines().length) : segment(REF.an, +S.pause);
+  REF.stats = REF.segs.map(s => segStats(REF.an, s));
+  pairCache.clear(); wordCache.clear();
+}
+function lineAtTime(t) {
+  const segs = REF.segs, f = t * FPS;
+  for (let i = 0; i < segs.length; i++) if (f >= segs[i].a && f <= segs[i].b) return i;
+  let best = 0, bd = Infinity;
+  segs.forEach((s, i) => { const d = Math.min(Math.abs(f - s.a), Math.abs(f - s.b)); if (d < bd) { bd = d; best = i; } });
+  return best;
+}
+
+/* ---------- line list ---------- */
+function renderLines() {
+  const n = lineCount(), lines = scriptLines(), box = $("lines");
+  if (!n) { box.innerHTML = `<p class="hint-s">お手本の音声を読み込むと、ここに行が並びます。</p>`; $("lines-note").textContent = ""; return; }
+  box.innerHTML = REF.segs.map((s, i) => {
+    const p = getPair(i), tx = lines[i];
+    let pill = `<span class="pill none">未録音</span>`;
+    if (p && !isNaN(p.cmp.corr)) { const v = Math.round(p.cmp.corr * 100); pill = `<span class="pill ${v >= 65 ? "good" : "warn"}">一致 ${v}%</span>`; }
+    return `<button type="button" class="line-card" data-i="${i}" aria-current="${i === S.sel}">
+      <span class="row1"><span class="no">${i + 1}</span>${pill}<span class="tm">${fmt(s.a / FPS)}</span></span>
+      <span class="tx${tx ? "" : " empty"}">${tx ? esc(tx) : "（スクリプト未入力）"}</span></button>`;
+  }).join("");
+  const done = Object.keys(takes).filter(k => +k < n).length;
+  let note = `${n}行 ・ 録音済み ${done}行`;
+  if (lines.length && lines.length !== n) note += ` ・ スクリプトは${lines.length}行です。区切りがずれる場合は「行の区切り」を変えてください`;
+  $("lines-note").textContent = note;
+  scrollCardIntoView();
+}
+function scrollCardIntoView() {
+  const box = $("lines"), card = box.querySelector(`[data-i="${S.sel}"]`);
+  if (!card) return;
+  const l = card.offsetLeft - box.offsetLeft, r = l + card.offsetWidth;
+  if (l < box.scrollLeft || r > box.scrollLeft + box.clientWidth) box.scrollLeft = l - 12;
+}
+$("lines").addEventListener("click", (e) => { const c = e.target.closest(".line-card"); if (c) select(+c.dataset.i); });
+
+function select(i, opts = {}) {
+  const n = lineCount(); if (!n) return;
+  i = Math.max(0, Math.min(n - 1, i));
+  const changed = i !== S.sel; S.sel = i;
+  $("lines").querySelectorAll(".line-card").forEach(c => c.setAttribute("aria-current", String(+c.dataset.i === i)));
+  scrollCardIntoView();
+  renderLineDetail();
+  if (S.view === "line") { if (changed && !opts.keepScroll) $("scroller").scrollLeft = 0; }
+  else if (!opts.keepScroll) scrollToLine();
+}
+function renderLineDetail() { renderHeader(); renderScript(); renderRecorder(); renderMetrics(); renderFeedback(); drawCharts(); drawWaveRef(); drawWaveMine(); }
+function scrollToLine() { if (!REF || !geo) return; $("scroller").scrollLeft = Math.max(0, geo.X(REF.segs[S.sel].a / FPS) - 24); }
+function renderHeader() {
+  const n = lineCount();
+  $("pos").innerHTML = n ? `行 ${S.sel + 1}<small> / ${n}</small>` : "—";
+  $("prev").disabled = !n || S.sel <= 0; $("next").disabled = !n || S.sel >= n - 1;
+  const has = !!takes[S.sel];
+  $("lp-mine").disabled = !has; $("lp-both").disabled = !has; $("lp-ref").disabled = !n; $("lp-conv").disabled = !n;
+  renderVoice();
+}
+$("prev").addEventListener("click", () => select(S.sel - 1));
+$("next").addEventListener("click", () => select(S.sel + 1));
+document.addEventListener("keydown", (e) => {
+  if (e.target.closest && e.target.closest("input,textarea,select")) return;
+  if (e.key === "ArrowLeft") { e.preventDefault(); select(S.sel - 1); }
+  else if (e.key === "ArrowRight") { e.preventDefault(); select(S.sel + 1); }
+  else if (e.key === "r" || e.key === "R") { e.preventDefault(); rec.state === "recording" ? stopRec() : startRec(true); }
+});
+
+/* ---------- script display (words sized by stress) ---------- */
+function sylHTML(s, big) {
+  const size = big ? 17 + 27 * s.norm : 11 + 13 * s.norm;
+  const w = s.strong ? 800 : Math.round((400 + 200 * s.norm) / 100) * 100;
+  return `<span class="syl ${s.strong ? "s" : "w"}" style="font-size:${size.toFixed(1)}px;font-weight:${w}">${esc(s.t)}</span>`;
+}
+function renderScript() {
+  const words = wordTiming(S.sel), refBox = $("wl-ref"), mineBox = $("wl-mine");
+  if (!words) {
+    refBox.innerHTML = `<span class="empty">${lineCount() ? "この行のスクリプトを入力すると、単語ごとの強勢が表示されます。" : "お手本の音声を読み込んでください。"}</span>`;
+    mineBox.innerHTML = ""; return;
+  }
+  refBox.innerHTML = words.map((w, k) => `<button type="button" class="word" data-w="${k}" data-who="ref" title="${esc(w.clean)}：クリックで発音を聞く">${w.syl.map(s => sylHTML(s, true)).join("")}</button>`).join("");
+  const mw = mineWordStrengths(S.sel, words);
+  if (!mw) { mineBox.innerHTML = `<span class="empty">録音すると、あなたの強勢が同じ形で表示されます。</span>`; return; }
+  mineBox.innerHTML = mw.map((w, k) => `<button type="button" class="word" data-w="${k}" data-who="mine" title="${esc(words[k].clean)}：クリックであなたの発音を聞く">${w.syl.map(s => sylHTML(s, true)).join("")}</button>`).join("");
+}
+function onWordClick(e) {
+  const b = e.target.closest("[data-w]"); if (!b) return;
+  e.stopPropagation();
+  const line = b.dataset.line != null ? +b.dataset.line : S.sel, k = +b.dataset.w;
+  if (line !== S.sel) select(line, { keepScroll: true });
+  playWord(line, k, b.dataset.who);
+}
+$("wl-ref").addEventListener("click", onWordClick);
+$("wl-mine").addEventListener("click", onWordClick);
+$("wrow").addEventListener("click", onWordClick);
+function playWord(i, k, who) {
+  const words = wordTiming(i); if (!words || !words[k]) return;
+  const w = words[k];
+  if (who === "mine") {
+    const mw = mineWordStrengths(i, words); if (!mw) return;
+    playTake(i, mw[k].a / FPS - 0.04, mw[k].b / FPS + 0.05);
+    return;
+  }
+  if (S.wordmode === "tts") {
+    try {
+      stopAll();
+      const u = new SpeechSynthesisUtterance(w.clean || w.text); u.lang = "en-US"; u.rate = S.speed;
+      speechSynthesis.speak(u);
+    } catch (err) { setStatus("このブラウザでは読み上げを使えません。「お手本の音声」に切り替えてください。"); }
+    return;
+  }
+  playModelRange(Math.max(0, w.a / FPS - 0.04), w.b / FPS + 0.05, null, i);
+}
+
+/* ---------- metrics + feedback ---------- */
+function barRow(label, v, max, color, unit, dec = 1) {
+  const w = isNaN(v) ? 0 : Math.max(2, Math.min(100, v / max * 100));
+  return `<div class="bar"><span>${label}</span><span class="track"><span class="fill" style="width:${w}%;background:${color}"></span></span><span class="v">${isNaN(v) ? "—" : v.toFixed(dec) + unit}</span></div>`;
+}
+function renderMetrics() {
+  if (!lineCount()) { $("metrics").innerHTML = ""; return; }
+  const p = getPair(S.sel), R = REF.stats[S.sel], M = p ? p.mst : null, cmp = p ? p.cmp : null;
+  const pill = (state, text) => `<span class="pill ${state}">${text}</span>`;
+  const rs = (m, r, lo, hi) => (!M || isNaN(m) || isNaN(r)) ? "none" : (m / r >= lo && m / r <= hi ? "good" : "warn");
+  const rt = (m, r, lo, hi) => (!M || isNaN(m) || isNaN(r)) ? "未録音" : (m / r < lo ? "小さい" : m / r > hi ? "大きい" : "近い");
+  const rr = R.range, mr = M ? M.range : NaN, rc = R.contrast, mc = M ? M.contrast : NaN;
+  const maxR = Math.max(12, rr || 0, mr || 0), maxC = Math.max(10, rc || 0, mc || 0);
+  const main = M || R, corrPct = cmp && !isNaN(cmp.corr) ? cmp.corr * 100 : NaN;
+  const num = (v) => isNaN(v) ? "—" : v.toFixed(1);
+  const rn = R.nuclei.length, mn = M ? M.nuclei.length : NaN, mxN = Math.max(rn, mn || 0, 4);
+  const cs = isNaN(corrPct) ? "none" : corrPct >= 65 ? "good" : "warn";
+  const ss = cmp ? (cmp.hit === cmp.refStrongN ? "good" : "warn") : "none";
+  $("metrics").innerHTML = [
+    `<div class="metric"><div class="top"><h3>抑揚の幅</h3>${pill(rs(mr, rr, .75, 1.35), rt(mr, rr, .75, 1.35))}</div>
+      <div class="big">${num(main.range)}<small>半音</small></div>
+      <div class="bars">${barRow("お手本", rr, maxR, "var(--ref)", "")}${barRow("あなた", mr, maxR, "var(--mine)", "")}</div>
+      <p class="hint">この行の声の高さの上下の幅。</p></div>`,
+    `<div class="metric"><div class="top"><h3>強弱のメリハリ</h3>${pill(rs(mc, rc, .7, 1.5), rt(mc, rc, .7, 1.5))}</div>
+      <div class="big">${num(main.contrast)}<small>dB</small></div>
+      <div class="bars">${barRow("お手本", rc, maxC, "var(--ref)", "")}${barRow("あなた", mc, maxC, "var(--mine)", "")}</div>
+      <p class="hint">強い音節と弱い音節の音量差。</p></div>`,
+    `<div class="metric"><div class="top"><h3>抑揚カーブの一致度</h3>${pill(cs, isNaN(corrPct) ? "未録音" : corrPct >= 65 ? "似ている" : "形が違う")}</div>
+      <div class="big">${isNaN(corrPct) ? "—" : Math.round(corrPct)}<small>%</small></div>
+      <div class="bars">${barRow("一致", corrPct, 100, "var(--ink-2)", "%", 0)}</div>
+      <p class="hint">2本のカーブが同じ形・同じ幅で上下しているか。</p></div>`,
+    `<div class="metric"><div class="top"><h3>強勢の位置</h3>${pill(ss, cmp ? (cmp.hit === cmp.refStrongN ? "一致" : "ずれあり") : "未録音")}</div>
+      <div class="big">${cmp ? cmp.hit + "<small>/ " + cmp.refStrongN + " 箇所</small>" : "—"}</div>
+      <div class="bars">${barRow("お手本", rn, mxN, "var(--ref)", "山", 0)}${barRow("あなた", mn, mxN, "var(--mine)", "山", 0)}</div>
+      <p class="hint">お手本の強い音節と同じ位置で強く言えているか。</p></div>`
+  ].join("");
+}
+function renderFeedback() {
+  const n = lineCount(), items = [];
+  const p = n ? getPair(S.sel) : null;
+  if (!p) {
+    $("fb-note").textContent = n ? `行 ${S.sel + 1}` : "";
+    $("feedback").innerHTML = `<li><span class="pill none">待機中</span><span>${n ? "この行を録音すると、お手本と比べたアドバイスが表示されます。" : "お手本の音声を読み込んでください。"}</span></li>`;
+    return;
+  }
+  const R = p.rst, M = p.mst, cmp = p.cmp;
+  const ok = (t) => items.push(["good", "OK", t]), ng = (t) => items.push(["warn", "練習", t]);
+  const words = wordTiming(S.sel), mw = words ? mineWordStrengths(S.sel, words) : null;
+  if (words && mw) {
+    const refStrong = words.map((w, k) => ({ w, k })).filter(x => x.w.strong);
+    const missed = refStrong.filter(x => mw[x.k].syl.every(s => !s.strong) && Math.max(...mw[x.k].syl.map(s => s.norm)) < 0.6);
+    const extra = words.map((w, k) => ({ w, k })).filter(x => !x.w.strong && x.w.norm < 0.4 && mw[x.k].syl.some(s => s.strong));
+    if (missed.length) ng(`お手本で強く言っている <b>${missed.map(x => esc(x.w.clean)).join(", ")}</b> が、あなたの録音では弱めです。この単語をクリックして聞き、大きく・長く・高く言ってみましょう。`);
+    if (extra.length) ng(`<b>${extra.map(x => esc(x.w.clean)).join(", ")}</b> はお手本では弱く短い単語ですが、強く発音されています。軽く添えるように。`);
+    if (refStrong.length && !missed.length) ok(`強く言うべき単語（${refStrong.map(x => esc(x.w.clean)).join(", ")}）はしっかり強調できています。`);
+  }
+  const tkx = takes[S.sel];
+  if (tkx && tkx.missing) {
+    if (tkx.missing.length) ng(`文字起こしでは <b>${tkx.missing.map(esc).join(", ")}</b> がスクリプトどおりに聞き取られませんでした。その単語をクリックしてお手本の発音と聞き比べてみましょう。`);
+    else ok(`文字起こしで、すべての単語がスクリプトどおりに聞き取られました。`);
+  }
+  if (!isNaN(R.range) && !isNaN(M.range) && R.range > 0) {
+    const rr = M.range / R.range;
+    if (rr < 0.75) ng(`抑揚の幅がお手本の約${Math.round(rr * 100)}%です。強調する単語で声を一段高く上げ、文末ははっきり下げてみましょう。`);
+    else if (rr > 1.35) ng(`抑揚の幅がお手本より大きめです（約${Math.round(rr * 100)}%）。大げさになりすぎていないか聞き比べてみましょう。`);
+    else ok(`抑揚の幅はお手本に近いです（約${Math.round(rr * 100)}%）。`);
+  }
+  if (R.contrast > 0 && !isNaN(M.contrast)) {
+    if (M.contrast / R.contrast < 0.7) ng(`強い音節と弱い音節の差が小さく、全体が同じ強さに聞こえやすい状態です。上の文字の大きさの差をお手本に近づけましょう。`);
+    else ok(`強弱の差はお手本と同程度出ています。`);
+  }
+  if (!isNaN(cmp.corr)) {
+    if (cmp.corr < 0.5) ng(`高さの上がり下がりの形がお手本と違います。上段のカーブで、お手本の山がどの単語の上にあるかを確認しましょう。`);
+    else if (cmp.corr < 0.65) ng(`カーブの形はおおむね近いですが、山の位置や高さに差があります。`);
+    else ok(`カーブの形はお手本とよく似ています。`);
+  }
+  const extraN = M.nuclei.length - R.nuclei.length;
+  if (extraN >= 2) ng(`音節の山がお手本より ${extraN} 個多く検出されました。子音の後ろに母音を足している（did → ディド、that → ザット）可能性があります。`);
+  if (R.finalMove < -1.5 && M.finalMove > -1) ng(`お手本は文末で下がっていますが、あなたの文末はあまり下がっていません。最後の強勢のあとは下げきるイメージで。`);
+  else if (R.finalMove > 1.5 && M.finalMove < 1) ng(`お手本は文末で上がっています（疑問文など）。最後を上げてみましょう。`);
+  if (R.speechDur > 0) { const tr = M.speechDur / R.speechDur; if (tr > 1.35) ng(`お手本より約${tr.toFixed(1)}倍ゆっくりです。弱い音節を短くすると自然に近づきます。`); }
+  items.sort((a, b) => (a[0] === "warn" ? 0 : 1) - (b[0] === "warn" ? 0 : 1));
+  $("fb-note").textContent = `行 ${S.sel + 1} ・ ${items.filter(i => i[0] === "warn").length} 件の練習ポイント`;
+  $("feedback").innerHTML = items.map(([s, l, t]) => `<li><span class="pill ${s}">${l}</span><span>${t}</span></li>`).join("");
+}
+
+/* ---------- drawing ---------- */
+const H_P = 236, H_W = 46, H_S = 58, H_I = 112, PADX = 10;
+function setupCanvas(cv, w, h, fluid) {
+  let dpr = window.devicePixelRatio || 1;
+  dpr = Math.min(dpr, 32000 / Math.max(1, w));
+  cv.style.width = fluid ? "100%" : w + "px"; cv.style.height = h + "px";
+  cv.width = Math.max(1, Math.round(w * dpr)); cv.height = Math.round(h * dpr);
+  const ctx = cv.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, w, h);
+  return ctx;
+}
+const pTop = 20, pBot = 212, stMax = 12;
+const Yp = (s) => pTop + (stMax - Math.max(-stMax, Math.min(stMax, s))) / (2 * stMax) * (pBot - pTop);
+const iTop = 6, iBot = 104, dbMin = -40;
+const Yi = (v) => iTop + (0 - Math.max(dbMin, Math.min(0, v))) / (-dbMin) * (iBot - iTop);
+function rowsY() { const both = S.show.ref && S.show.mine; return { ref: both ? 17 : 29, mine: both ? 43 : 29 }; }
+function drawAxis() {
+  const ctx = setupCanvas($("c-axis"), 44, H_P + 1 + H_W + 1 + H_S + H_I);
+  ctx.font = "11px " + cssVar("--mono"); ctx.textBaseline = "middle"; ctx.fillStyle = cssVar("--ink-3");
+  ctx.textAlign = "left"; ctx.fillText("半音", 2, 7); ctx.textAlign = "right";
+  for (const s of [-12, -6, 0, 6, 12]) ctx.fillText((s > 0 ? "+" : "") + s, 38, Yp(s));
+  ctx.fillText("単語", 38, H_P + 1 + H_W / 2);
+  const base = H_P + H_W + 2, ry = rowsY();
+  if (S.show.ref) { ctx.fillStyle = cssVar("--ref"); ctx.fillText("手本", 38, base + ry.ref); }
+  if (S.show.mine) { ctx.fillStyle = cssVar("--mine"); ctx.fillText("自分", 38, base + ry.mine); }
+  ctx.fillStyle = cssVar("--ink-3");
+  for (const v of [0, -20, -40]) ctx.fillText(v + "dB", 40, base + H_S + Yi(v));
+}
+function drawCharts() {
+  drawAxis();
+  const scroller = $("scroller"), clientW = Math.max(200, scroller.clientWidth);
+  const grid = cssVar("--grid"), ink3 = cssVar("--ink-3"), ink2 = cssVar("--ink-2"), band = cssVar("--band"), ink = cssVar("--ink");
+  const cRef = cssVar("--ref"), cMine = cssVar("--mine"), cRefSoft = cssVar("--ref-soft"), surface = cssVar("--surface");
+  const mono = "11px " + cssVar("--mono");
+  if (!REF) {
+    const P = setupCanvas($("c-pitch"), clientW, H_P); setupCanvas($("c-stress"), clientW, H_S); setupCanvas($("c-int"), clientW, H_I);
+    P.fillStyle = ink2; P.textAlign = "center"; P.font = "14px " + cssVar("--body"); P.fillText("お手本の音声を読み込むとここに表示されます", clientW / 2, 120);
+    $("wrow").innerHTML = ""; geo = null; return;
+  }
+  const segs = REF.segs, an = REF.an;
+  let t0, t1;
+  if (S.view === "line") { const sg = segs[S.sel]; t0 = sg.a / FPS; t1 = Math.max(sg.b / FPS, t0 + 0.3); }
+  else { t0 = 0; t1 = an.dur; }
+  let pxs = S.zoom === "fit" ? null : +S.zoom;
+  if (S.view === "all" && !pxs) pxs = 150;
+  let W = pxs ? Math.max(clientW, (t1 - t0) * pxs + 2 * PADX) : clientW;
+  W = Math.min(Math.round(W), 30000);
+  const X = (t) => PADX + (t - t0) / (t1 - t0) * (W - 2 * PADX);
+  geo = { t0, t1, W, X };
+  $("inner").style.width = W + "px";
+  const P = setupCanvas($("c-pitch"), W, H_P), Sx = setupCanvas($("c-stress"), W, H_S), I = setupCanvas($("c-int"), W, H_I);
+  const vis = S.view === "line" ? [S.sel] : segs.map((_, i) => i);
+  const lines = scriptLines();
+
+  if (S.view === "all") segs.forEach((sg, i) => {
+    const x0 = X(sg.a / FPS), x1 = X(sg.b / FPS);
+    for (const [ctx, h] of [[P, H_P], [Sx, H_S], [I, H_I]]) { ctx.fillStyle = band; ctx.fillRect(x0, 0, x1 - x0, h); }
+    if (i === S.sel) { P.strokeStyle = ink; P.lineWidth = 1.5; P.strokeRect(x0 + .75, .75, x1 - x0 - 1.5, H_P - 1.5); }
+    P.save(); P.beginPath(); P.rect(x0, 0, x1 - x0, 18); P.clip();
+    P.fillStyle = i === S.sel ? ink : ink2; P.font = "600 12px " + cssVar("--body"); P.textAlign = "left"; P.textBaseline = "top";
+    P.fillText(`${i + 1}  ${lines[i] || ""}`, x0 + 6, 3); P.restore();
+  });
+  P.lineWidth = 1;
+  for (const s of [-12, -6, 0, 6, 12]) { P.strokeStyle = grid; P.setLineDash(s === 0 ? [4, 4] : []); P.beginPath(); P.moveTo(0, Yp(s) + .5); P.lineTo(W, Yp(s) + .5); P.stroke(); }
+  P.setLineDash([]);
+  const pxPerSec = (W - 2 * PADX) / (t1 - t0);
+  const stepT = pxPerSec > 250 ? 0.25 : pxPerSec > 120 ? 0.5 : pxPerSec > 50 ? 1 : pxPerSec > 20 ? 2 : 5;
+  P.font = mono; P.textAlign = "center"; P.textBaseline = "alphabetic";
+  for (let t = Math.ceil(t0 / stepT) * stepT; t <= t1 + 1e-6; t += stepT) {
+    P.strokeStyle = grid; P.beginPath(); P.moveTo(X(t) + .5, pTop); P.lineTo(X(t) + .5, pBot); P.stroke();
+    P.fillStyle = ink3; P.fillText(fmt(t, stepT < 0.5 ? 2 : 1), Math.max(28, Math.min(W - 28, X(t))), H_P - 6);
+  }
+  // word boundaries on the pitch chart + clickable word row
+  const wrow = [];
+  for (const i of vis) {
+    const words = wordTiming(i); if (!words) continue;
+    P.strokeStyle = cRefSoft; P.lineWidth = 1;
+    words.forEach((w, k) => {
+      const x0 = X(w.a / FPS), x1 = X(w.b / FPS);
+      if (k) { P.beginPath(); P.moveTo(x0 + .5, pTop); P.lineTo(x0 + .5, pBot); P.stroke(); }
+      wrow.push(`<button type="button" class="wbtn" data-line="${i}" data-w="${k}" data-who="ref" style="left:${x0.toFixed(1)}px;width:${Math.max(4, x1 - x0).toFixed(1)}px" title="${esc(w.clean)}：クリックで発音を聞く">${w.syl.map(s => sylHTML(s, false)).join("")}</button>`);
+    });
+  }
+  $("wrow").innerHTML = wrow.join("");
+  nowKey = "";
+  const wfac = (a, f) => 1.2 + 6 * Math.max(0, Math.min(1, (a.env[f] - (a.maxEnv - 30)) / 30));
+  P.lineCap = "round";
+  const j0 = Math.max(0, Math.floor(t0 * FPS)), j1 = Math.min(an.N - 2, Math.ceil(t1 * FPS));
+  if (S.show.ref) {
+    P.strokeStyle = cRef;
+    for (let j = j0; j < j1; j++) {
+      const v1 = an.st[j], v2 = an.st[j + 1]; if (isNaN(v1) || isNaN(v2)) continue;
+      P.lineWidth = wfac(an, j); P.beginPath(); P.moveTo(X(j / FPS), Yp(v1)); P.lineTo(X((j + 1) / FPS), Yp(v2)); P.stroke();
+    }
+  }
+  if (S.show.mine) for (const i of vis) {
+    const p = getPair(i); if (!p) continue;
+    P.strokeStyle = cMine;
+    for (let k = 0; k < p.map.length - 1; k++) {
+      const f1 = Math.round(p.map[k]), f2 = Math.round(p.map[k + 1]);
+      if (Math.abs(f2 - f1) > 4) continue;
+      const v1 = p.man.st[f1], v2 = p.man.st[f2]; if (isNaN(v1) || isNaN(v2)) continue;
+      const j = p.rs.a + k;
+      P.lineWidth = wfac(p.man, f1); P.beginPath(); P.moveTo(X(j / FPS), Yp(v1)); P.lineTo(X((j + 1) / FPS), Yp(v2)); P.stroke();
+    }
+  }
+  const ry = rowsY();
+  const dot = (x, y, n, col) => {
+    Sx.beginPath(); Sx.arc(x, y, 3 + 7 * n.norm, 0, Math.PI * 2);
+    if (n.strong) { Sx.fillStyle = col; Sx.fill(); } else { Sx.fillStyle = surface; Sx.fill(); Sx.strokeStyle = col; Sx.lineWidth = 1.5; Sx.stroke(); }
+  };
+  for (const [k, y] of [["ref", ry.ref], ["mine", ry.mine]]) {
+    if (!S.show[k]) continue;
+    Sx.strokeStyle = grid; Sx.lineWidth = 1; Sx.beginPath(); Sx.moveTo(0, y + .5); Sx.lineTo(W, y + .5); Sx.stroke();
+  }
+  for (const i of vis) {
+    if (S.show.ref) for (const n of REF.stats[i].nuclei) dot(X(n.i / FPS), ry.ref, n, cRef);
+    const p = getPair(i);
+    if (S.show.mine && p) for (const n of p.mst.nuclei) dot(X(pairMineToRef(p, n.i) / FPS), ry.mine, n, cMine);
+  }
+  for (const v of [0, -20, -40]) { I.strokeStyle = grid; I.lineWidth = 1; I.beginPath(); I.moveTo(0, Yi(v) + .5); I.lineTo(W, Yi(v) + .5); I.stroke(); }
+  const area = (pts, fill, col) => {
+    if (pts.length < 2) return;
+    if (fill) { I.beginPath(); I.moveTo(pts[0][0], Yi(dbMin)); pts.forEach(q => I.lineTo(q[0], q[1])); I.lineTo(pts[pts.length - 1][0], Yi(dbMin)); I.closePath(); I.fillStyle = fill; I.fill(); }
+    I.beginPath(); pts.forEach((q, n) => n ? I.lineTo(q[0], q[1]) : I.moveTo(q[0], q[1])); I.strokeStyle = col; I.lineWidth = 1.6; I.stroke();
+  };
+  if (S.show.ref) { const pts = []; for (let j = j0; j <= j1; j++) pts.push([X(j / FPS), Yi(an.env[j] - an.maxEnv)]); area(pts, cRefSoft, cRef); }
+  if (S.show.mine) for (const i of vis) {
+    const p = getPair(i); if (!p) continue;
+    const pts = []; for (let k = 0; k < p.map.length; k++) { const f = Math.round(p.map[k]); pts.push([X((p.rs.a + k) / FPS), Yi(p.man.env[f] - p.man.maxEnv)]); }
+    area(pts, null, cMine);
+  }
+}
+function drawWaveRef() {
+  const cv = $("wave-ref"), w = Math.max(100, cv.parentElement.clientWidth), h = 64, ctx = setupCanvas(cv, w, h, true);
+  if (!REF) { ctx.fillStyle = cssVar("--ink-3"); ctx.font = "12px " + cssVar("--body"); ctx.textAlign = "center"; ctx.fillText("未読み込み", w / 2, h / 2 + 4); return; }
+  REF.segs.forEach((s, i) => {
+    ctx.fillStyle = i === S.sel ? cssVar("--ref-soft") : cssVar("--band");
+    ctx.fillRect(s.a / FPS / REF.an.dur * w, 0, Math.max(1, (s.b - s.a) / FPS / REF.an.dur * w), h);
+  });
+  drawSamples(ctx, REF.samples, w, h, cssVar("--ref"));
+  ctx.font = "10px " + cssVar("--mono"); ctx.fillStyle = cssVar("--ink-3"); ctx.textBaseline = "top";
+  if (REF.segs.length <= 40) REF.segs.forEach((s, i) => ctx.fillText(String(i + 1), s.a / FPS / REF.an.dur * w + 2, 2));
+}
+function drawWaveMine() {
+  const cv = $("wave-mine"), w = Math.max(100, cv.parentElement.clientWidth), h = 44, ctx = setupCanvas(cv, w, h, true), tk = takes[S.sel];
+  if (!tk) { ctx.fillStyle = cssVar("--ink-3"); ctx.font = "12px " + cssVar("--body"); ctx.textAlign = "center"; ctx.fillText("録音するとここに波形が出ます", w / 2, h / 2 + 4); return; }
+  drawSamples(ctx, tk.samples, w, h, cssVar("--mine"));
+}
+function drawSamples(ctx, x, w, h, col) {
+  const n = x.length; let peak = 1e-6;
+  for (let i = 0; i < n; i += 7) peak = Math.max(peak, Math.abs(x[i]));
+  ctx.fillStyle = col; ctx.globalAlpha = .75;
+  for (let px = 0; px < w; px++) {
+    const s = Math.floor(px / w * n), e = Math.floor((px + 1) / w * n);
+    let mn = 0, mx = 0; for (let i = s; i < e; i += 3) { if (x[i] < mn) mn = x[i]; if (x[i] > mx) mx = x[i]; }
+    const y1 = h / 2 - mx / peak * (h / 2 - 5), y2 = h / 2 - mn / peak * (h / 2 - 5);
+    ctx.fillRect(px, y1, 1, Math.max(1, y2 - y1));
+  }
+  ctx.globalAlpha = 1;
+}
+function drawAll() { drawCharts(); drawWaveRef(); drawWaveMine(); }
+
+/* ---------- playback ---------- */
+let cur = null, raf = 0, nowKey = "";
+function setPlayBtn(playing) {
+  const b = $("play-ref");
+  b.querySelector("span").textContent = playing ? "停止" : "全体を再生";
+  b.querySelector("svg").innerHTML = playing ? '<path d="M2 2h8v8H2z"/>' : '<path d="M2 1l9 5-9 5z"/>';
+}
+function stopAll() {
+  const c = cur; cur = null;
+  for (const k of PLAYERS) if (!audios[k].paused) audios[k].pause();
+  setPlayBtn(false);
+  try { speechSynthesis.cancel(); } catch (e) {}
+  if (c && c.then && c.cancelThen) c.cancelThen();
+}
+function whenReady(a) { return a.readyState >= 1 ? Promise.resolve() : new Promise(r => a.addEventListener("loadedmetadata", r, { once: true })); }
+async function playRange(k, from, to, then, follow, line) {
+  stopAll();
+  const a = audios[k];
+  a.playbackRate = S.speed; try { a.preservesPitch = true; } catch (e) {}
+  await whenReady(a);
+  a.currentTime = Math.max(0, from);
+  const me = { k, to, then, follow, line };
+  cur = me;
+  try { await a.play(); if (cur !== me) return; if (k === "ref" && to === Infinity) setPlayBtn(true); loop(); }
+  catch (e) { if (cur === me) cur = null; setStatus("再生できませんでした。もう一度押してください。"); }
+}
+async function playTake(i, from, to, then) {
+  const tk = takes[i]; if (!tk) return;
+  const a = audios.mine;
+  if (a.dataset.url !== tk.url) { stopAll(); a.src = tk.url; a.dataset.url = tk.url; }
+  return playRange("mine", from, to, then, false, i);
+}
+function finish(k) {
+  if (!cur || cur.k !== k) return;
+  const th = cur.then; cur = null;
+  audios[k].pause(); setPlayBtn(false);
+  if (th) setTimeout(th, 300);
+}
+for (const k of PLAYERS) audios[k].addEventListener("ended", () => finish(k));
+audios.ref.addEventListener("pause", () => setPlayBtn(false));
+function playRefLine(then) { const s = REF.segs[S.sel]; return playModelRange(s.a / FPS, s.b / FPS, then, S.sel); }
+async function playModelRange(from, to, then, line, voice) {
+  const v = voice || S.modelVoice;
+  if (v === "conv") { const ok = await ensureConv(); if (!ok) return; return playRange("conv", from, to, then, false, line); }
+  return playRange("ref", from, to, then, false, line);
+}
+function playMineLine(then) { const tk = takes[S.sel]; if (tk) playTake(S.sel, tk.seg.a / FPS, tk.seg.b / FPS, then); }
+$("play-ref").addEventListener("click", () => { if (!audios.ref.paused) { stopAll(); return; } if (REF) playRange("ref", 0, Infinity, null, true); });
+$("lp-ref").addEventListener("click", () => { if (REF) { const s = REF.segs[S.sel]; playModelRange(s.a / FPS, s.b / FPS, null, S.sel, "orig"); } });
+$("lp-conv").addEventListener("click", () => { if (REF) { const s = REF.segs[S.sel]; playModelRange(s.a / FPS, s.b / FPS, null, S.sel, "conv"); } });
+$("lp-mine").addEventListener("click", () => playMineLine());
+$("lp-both").addEventListener("click", () => REF && playRefLine(() => playMineLine()));
+
+function markWords(line, frame) {
+  let key = "";
+  const words = line != null ? wordTiming(line) : null;
+  if (words && frame != null) { const k = words.findIndex(w => frame >= w.a && frame <= w.b); if (k >= 0) key = line + ":" + k; }
+  if (key === nowKey) return;
+  nowKey = key;
+  document.querySelectorAll(".word.now,.wbtn.now").forEach(e => e.classList.remove("now"));
+  if (!key) return;
+  const [l, k] = key.split(":");
+  document.querySelectorAll(`.wbtn[data-line="${l}"][data-w="${k}"]`).forEach(e => e.classList.add("now"));
+  if (+l === S.sel) document.querySelectorAll(`.word[data-w="${k}"]`).forEach(e => e.classList.add("now"));
+}
+function loop() {
+  cancelAnimationFrame(raf);
+  const ph = $("ph-chart"), scroller = $("scroller");
+  let any = false;
+  for (const k of PLAYERS) {
+    const a = audios[k], wph = $("ph-wave-" + (k === "conv" ? "ref" : k));
+    if (a.paused || !cur || cur.k !== k) { if (!(k === "ref" && cur && cur.k === "conv")) wph.style.display = "none"; continue; }
+    any = true;
+    if (a.currentTime >= cur.to) { finish(k); continue; }
+    const dur = k !== "mine" ? REF.an.dur : (takes[cur.line] ? takes[cur.line].an.dur : 1);
+    wph.style.display = "block"; wph.style.left = (a.currentTime / dur * 100) + "%";
+    let tb = a.currentTime;
+    if (k === "mine") { const p = getPair(cur.line); tb = p ? pairMineToRef(p, a.currentTime * FPS) / FPS : null; }
+    if (tb == null) { ph.style.display = "none"; continue; }
+    if (k === "ref" && cur.follow && S.view === "line") {
+      const i = lineAtTime(tb), s = REF.segs[i];
+      if (i !== S.sel && tb * FPS >= s.a && tb * FPS <= s.b) select(i);
+    }
+    markWords(k !== "mine" ? lineAtTime(tb) : cur.line, tb * FPS);
+    if (geo && tb >= geo.t0 && tb <= geo.t1) {
+      const x = geo.X(tb);
+      ph.style.display = "block"; ph.style.left = x + "px"; ph.style.background = cssVar(k === "ref" ? "--ref" : k === "conv" ? "--conv" : "--mine");
+      if (geo.W > scroller.clientWidth && (x < scroller.scrollLeft + 10 || x > scroller.scrollLeft + scroller.clientWidth - 40)) scroller.scrollLeft = x - scroller.clientWidth * 0.25;
+    } else ph.style.display = "none";
+  }
+  if (any) raf = requestAnimationFrame(loop); else { ph.style.display = "none"; markWords(null); }
+}
+$("inner").addEventListener("click", (e) => {
+  if (!REF || !geo || e.target.closest("[data-w]")) return;
+  const r = $("inner").getBoundingClientRect();
+  const t = geo.t0 + (e.clientX - r.left - PADX) / (geo.W - 2 * PADX) * (geo.t1 - geo.t0);
+  if (S.view === "line") { const s = REF.segs[S.sel]; playRange("ref", Math.max(s.a / FPS, t), s.b / FPS, null, false, S.sel); }
+  else { const i = lineAtTime(t); if (i !== S.sel) select(i, { keepScroll: true }); playRange("ref", Math.max(0, t), Infinity); }
+});
+$("wwrap-ref").addEventListener("click", (e) => {
+  if (!REF) return;
+  const r = e.currentTarget.getBoundingClientRect(), t = (e.clientX - r.left) / r.width * REF.an.dur;
+  select(lineAtTime(t)); playRange("ref", t, Infinity, null, true);
+});
+$("wwrap-mine").addEventListener("click", (e) => {
+  const tk = takes[S.sel]; if (!tk) return;
+  const r = e.currentTarget.getBoundingClientRect();
+  playTake(S.sel, (e.clientX - r.left) / r.width * tk.an.dur, Infinity);
+});
+
+/* ---------- recorder ---------- */
+const rec = { state: "idle" };
+function recUI() {
+  const bm = $("rec-model"), bn = $("rec-now");
+  if (rec.state === "recording") {
+    bm.innerHTML = `<span class="dot"></span>停止して解析`; bm.classList.add("recording"); bm.disabled = false; bn.disabled = true;
+  } else if (rec.state === "model") {
+    bm.innerHTML = `<span class="dot"></span>お手本を再生中…`; bm.classList.remove("recording"); bm.disabled = true; bn.disabled = true;
+  } else {
+    bm.innerHTML = `<span class="dot"></span>お手本を聞いてから録音`; bm.classList.remove("recording");
+    bm.disabled = rec.state !== "idle" || !REF; bn.disabled = rec.state !== "idle" || !REF;
+  }
+  $("file-take").disabled = rec.state !== "idle";
+}
+function renderRecorder() {
+  $("rec-title").textContent = lineCount() ? `あなたの録音 ・ 行 ${S.sel + 1}` : "あなたの録音";
+  const tk = takes[S.sel];
+  if (!tk) { $("hist").textContent = "この行はまだ録音していません。"; return; }
+  const h = tk.history.map(v => isNaN(v) ? "—" : v + "%");
+  let heard = "";
+  if (tk.heard != null) {
+    const got = normWords(tk.heard);
+    heard = `<br>聞き取られた文：<span class="heard">${got.length ? got.map((w, k) => tk.heardOk && tk.heardOk[k] ? esc(w) : `<span class="x">${esc(w)}</span>`).join(" ") : "（聞き取れませんでした）"}</span>`;
+  } else if (ASR.ready && !REF.isSample) heard = "<br>聞き取られた文：解析中…";
+  $("hist").innerHTML = `${esc(tk.label)} ・ ${((tk.seg.b - tk.seg.a) / FPS).toFixed(1)}秒（波形クリックで再生）<br>一致度の記録：${h.map((v, n) => n === h.length - 1 ? `<b>${v}</b>` : v).join(" → ")}${heard}`;
+}
+function recStatus(t, live) { const el = $("rec-status"); el.textContent = t; el.classList.toggle("live", !!live); }
+function micError(e) {
+  const el = $("mic-err"); el.hidden = false;
+  const name = e && e.name;
+  const onClaude = /claude|anthropic/i.test(location.hostname) || window.self !== window.top;
+  if (onClaude && (name === "NotAllowedError" || name === "SecurityError"))
+    el.textContent = "Claude の中で開いたページでは、安全設定でマイクを使えません。Safari や Chrome で https://shiorisan.github.io/intonation-lens/ を開くと、その場で録音できます。今は「ファイルから」で録音ファイルを読み込めます。";
+  else if (name === "NotAllowedError" || name === "SecurityError")
+    el.textContent = "マイクの使用が許可されていません。アドレスバーのマイクのアイコンから許可して、もう一度押してください。";
+  else if (name === "NotFoundError") el.textContent = "マイクが見つかりませんでした。マイクを接続してから、もう一度押してください。";
+  else el.textContent = "マイクを使えませんでした。「ファイルから」で録音ファイルを読み込めます。";
+}
+async function startRec(withModel) {
+  if (!REF || rec.state !== "idle") return;
+  const line = S.sel;
+  $("mic-err").hidden = true;
+  rec.state = "arming"; recUI(); recStatus("マイクを準備しています…");
+  let stream;
+  try {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw Object.assign(new Error("nomic"), { name: "SecurityError" });
+    stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+  } catch (e) { rec.state = "idle"; recUI(); recStatus("録音できませんでした。"); micError(e); return; }
+  if (withModel) {
+    rec.state = "model"; recUI(); recStatus("お手本を再生中… 終わったらすぐに読んでください", true);
+    await new Promise(res => { const s = REF.segs[line]; Promise.resolve(playModelRange(s.a / FPS, s.b / FPS, res, line)).then(() => { if (!cur) res(); }); });
+    await sleep(120);
+  }
+  const AC = window.AudioContext || window.webkitAudioContext;
+  const ctx = new AC();
+  try { await ctx.resume(); } catch (e) {}
+  const src = ctx.createMediaStreamSource(stream), proc = ctx.createScriptProcessor(2048, 1, 1);
+  const chunks = [], refDur = (REF.segs[line].b - REF.segs[line].a) / FPS;
+  const maxDur = Math.min(40, Math.max(5, refDur * 2.5 + 2));
+  let t = 0, speech = false, lastLoud = 0, floor = 0, floorN = 0;
+  proc.onaudioprocess = (ev) => {
+    if (rec.state !== "recording") return;
+    const d = ev.inputBuffer.getChannelData(0);
+    chunks.push(new Float32Array(d));
+    let s = 0; for (let i = 0; i < d.length; i++) s += d[i] * d[i];
+    const db = 10 * Math.log10(s / d.length + 1e-12);
+    t += d.length / ctx.sampleRate;
+    if (t < 0.35) { floor += db; floorN++; }
+    const th = Math.max((floorN ? floor / floorN : -60) + 14, -52);
+    if (t >= 0.35 && db > th) { speech = true; lastLoud = t; }
+    rec.level = db; rec.t = t; rec.speech = speech;
+    if ((speech && t - lastLoud > 1.2) || t > maxDur) setTimeout(stopRec, 0);
+  };
+  src.connect(proc); proc.connect(ctx.destination);
+  Object.assign(rec, { state: "recording", ctx, stream, src, proc, chunks, line, t: 0, level: -90, speech: false });
+  recUI();
+  const meter = () => {
+    if (rec.state !== "recording") { $("lvl").style.width = "0"; return; }
+    $("lvl").style.width = Math.max(0, Math.min(100, (rec.level + 60) / 50 * 100)) + "%";
+    recStatus(`● 録音中 ${rec.t.toFixed(1)}秒 ・ ${rec.speech ? "話し終えたら1秒ほど黙ると止まります" : "どうぞ、読んでください"}`, true);
+    requestAnimationFrame(meter);
+  };
+  meter();
+}
+async function stopRec() {
+  if (rec.state !== "recording") return;
+  rec.state = "processing"; recUI(); recStatus("解析中…");
+  const { ctx, stream, src, proc, chunks, line } = rec;
+  try { src.disconnect(); proc.disconnect(); } catch (e) {}
+  stream.getTracks().forEach(tr => tr.stop());
+  const sr = ctx.sampleRate; try { ctx.close(); } catch (e) {}
+  const len = chunks.reduce((s, c) => s + c.length, 0);
+  $("lvl").style.width = "0";
+  if (len < sr * 0.4) { rec.state = "idle"; recUI(); recStatus("録音が短すぎました。もう一度どうぞ。"); return; }
+  const all = new Float32Array(len); let o = 0; for (const c of chunks) { all.set(c, o); o += c.length; }
+  const buf = new AudioBuffer({ length: len, sampleRate: sr, numberOfChannels: 1 });
+  buf.copyToChannel(all, 0);
+  const samples = await resample(buf);
+  rec.state = "idle"; recUI();
+  setTake(line, samples, "マイク録音");
+}
+$("rec-model").addEventListener("click", () => rec.state === "recording" ? stopRec() : startRec(true));
+$("rec-now").addEventListener("click", () => startRec(false));
+$("file-take").addEventListener("change", async (e) => {
+  const f = e.target.files[0]; e.target.value = ""; if (!f || !REF) return;
+  const line = S.sel;
+  recStatus(`「${f.name}」を解析中…`);
+  try { const d = await decodeFile(f); setTake(line, d.samples, f.name); }
+  catch (err) { recStatus("このファイルから音声を読み込めませんでした。MP3・M4A・WAV などを試してください。"); }
+});
+function setTake(i, samples, label, silent) {
+  const an = analyze(samples);
+  if (!an.rawNuclei.length) { recStatus("声がほとんど検出できませんでした。マイクに近づいて、もう一度どうぞ。"); return; }
+  const seg = speechBounds(an), old = takes[i];
+  if (old) { if (audios.mine.dataset.url === old.url) { audios.mine.removeAttribute("src"); audios.mine.dataset.url = ""; } URL.revokeObjectURL(old.url); }
+  const tk = { samples, an, seg, stats: segStats(an, seg), url: URL.createObjectURL(wavBlob(samples)), label, id: ++takeSeq, history: old ? old.history.slice() : [] };
+  takes[i] = tk;
+  const p = getPair(i);
+  const score = p && !isNaN(p.cmp.corr) ? Math.round(p.cmp.corr * 100) : NaN;
+  tk.history.push(score);
+  if (!silent) {
+    const prev = tk.history.length > 1 ? tk.history[tk.history.length - 2] : null;
+    recStatus(isNaN(score) ? `行 ${i + 1} を録音しました。` : prev != null && !isNaN(prev) ? `行 ${i + 1} を録音しました。一致度 ${prev}% → ${score}%` : `行 ${i + 1} を録音しました。一致度 ${score}%`);
+    renderLines(); renderLineDetail();
+    if (ASR.ready && REF && !REF.isSample) transcribeTake(i);
+  }
+}
+
+/* ---------- speech-to-text (Whisper in the browser) ---------- */
+const ASR_CDN = "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1/dist/transformers.min.js";
+const IS_MOBILE = (navigator.userAgentData && navigator.userAgentData.mobile) || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+const IN_HOST = (() => { try { return window.self !== window.top || /claude\.ai|anthropic|claudeusercontent/.test(location.hostname); } catch (e) { return true; } })();
+const ASR = { worker: null, mode: "worker", T: null, pipe: null, model: null, ready: false, busy: false, reqs: new Map(), seq: 0, files: {} };
+const WORKER_SRC = `
+let pipe = null, cur = null, T = null;
+self.onmessage = async (e) => {
+  const m = e.data;
+  try {
+    if (!T) { T = await import("${ASR_CDN}"); T.env.allowLocalModels = false; }
+    if (!pipe || cur !== m.model) {
+      pipe = await T.pipeline("automatic-speech-recognition", m.model, { progress_callback: (p) => self.postMessage({ id: m.id, type: "progress", p }) });
+      cur = m.model;
+    }
+    self.postMessage({ id: m.id, type: "ready" });
+    for (let k = 0; k < m.chunks.length; k++) {
+      const out = await pipe(m.chunks[k].audio, { return_timestamps: "word" });
+      self.postMessage({ id: m.id, type: "chunk", k, out: { text: out.text, chunks: out.chunks } });
+    }
+    self.postMessage({ id: m.id, type: "done" });
+  } catch (err) { self.postMessage({ id: m.id, type: "error", message: String((err && err.message) || err) }); }
+};`;
+async function asrMain(model, chunks, on) {
+  if (!ASR.T) { ASR.T = await import(ASR_CDN); ASR.T.env.allowLocalModels = false; }
+  if (!ASR.pipe || ASR.model !== model) ASR.pipe = await ASR.T.pipeline("automatic-speech-recognition", model, { progress_callback: (p) => on({ type: "progress", p }) });
+  on({ type: "ready" });
+  for (let k = 0; k < chunks.length; k++) { const out = await ASR.pipe(chunks[k].audio, { return_timestamps: "word" }); on({ type: "chunk", k, out }); await sleep(0); }
+}
+function asrWorker(model, chunks, on) {
+  if (!ASR.worker) {
+    ASR.worker = new Worker(URL.createObjectURL(new Blob([WORKER_SRC], { type: "text/javascript" })), { type: "module" });
+    ASR.worker.onmessage = (e) => { const h = ASR.reqs.get(e.data.id); if (h) h(e.data); };
+    ASR.worker.onerror = (e) => { e.preventDefault && e.preventDefault(); for (const h of ASR.reqs.values()) h({ type: "error", message: "worker-start:" + (e.message || "") }); };
+  }
+  return new Promise((res, rej) => {
+    const id = ++ASR.seq;
+    ASR.reqs.set(id, (d) => {
+      if (d.type === "error") { ASR.reqs.delete(id); rej(new Error(d.message)); }
+      else if (d.type === "done") { ASR.reqs.delete(id); res(); }
+      else on(d);
+    });
+    ASR.worker.postMessage({ id, model, chunks });
+  });
+}
+async function asrRun(model, chunks, on) {
+  if (window.__IL_MOCK_ASR) { await window.__IL_MOCK_ASR(model, chunks, on); ASR.ready = true; ASR.model = model; return; }
+  const wrap = (d) => { if (d.type === "ready") { ASR.ready = true; ASR.model = model; } on(d); };
+  if (ASR.mode === "worker") {
+    try { await asrWorker(model, chunks, wrap); return; }
+    catch (e) {
+      if (!/worker-start|Failed to construct|import/i.test(e.message)) throw e;
+      try { ASR.worker && ASR.worker.terminate(); } catch (x) {}
+      ASR.worker = null; ASR.mode = "main"; ASR.ready = false;
+    }
+  }
+  await asrMain(model, chunks, wrap);
+}
+function asrStatus(t) { $("asr-status").textContent = t; }
+function asrBar(f) { $("asr-bar").style.width = Math.max(0, Math.min(100, f * 100)) + "%"; }
+function asrErrorText(e) {
+  if (IN_HOST) return "Claude の中で開いたページでは文字起こしを使えません。Safari や Chrome で https://shiorisan.github.io/intonation-lens/ を開いてください。";
+  const msg = String(e && e.message || e);
+  if (IS_MOBILE && /memory|Aborted|RangeError|allocation/i.test(msg)) return "スマホのメモリが足りず文字起こしできませんでした。精度を「速い（tiny）」にして、もう一度押してください。";
+  return "文字起こしに失敗しました（" + msg.slice(0, 120) + "）。インターネット接続を確認して、もう一度押してください。";
+}
+function onAsrProgress(d, label) {
+  if (d.type === "progress" && d.p && d.p.status === "progress" && d.p.file) {
+    ASR.files[d.p.file] = { loaded: d.p.loaded || 0, total: d.p.total || 0 };
+    let L = 0, T = 0; for (const f of Object.values(ASR.files)) { L += f.loaded; T += f.total; }
+    if (T) { asrBar(L / T); asrStatus(`文字起こしモデルを準備中… ${Math.round(L / T * 100)}%（${(T / 1e6).toFixed(0)}MB・初回のみ）`); }
+  } else if (d.type === "ready") { asrBar(0); asrStatus(label + "…"); }
+}
+function parseWords(out, offset) {
+  const res = [];
+  for (const c of (out && out.chunks) || []) {
+    const text = String(c.text || "").trim();
+    if (!text || /^[\[(].*[\])]$/.test(text)) continue;
+    const ts = c.timestamp || [];
+    if (ts[0] == null) continue;
+    const a = ts[0] + offset, b = (ts[1] != null && ts[1] > ts[0] ? ts[1] : ts[0] + 0.3) + offset;
+    res.push({ text, a, b });
+  }
+  return res;
+}
+function buildLines(words) {
+  const lines = []; let cur = [];
+  const flush = () => { if (cur.length) lines.push({ text: cur.map(w => w.text).join(" "), words: cur.map(w => ({ text: w.text, a: Math.round(w.a * FPS), b: Math.round(w.b * FPS) })) }); cur = []; };
+  for (const w of words) {
+    if (cur.length && w.a - cur[cur.length - 1].b > 0.9) flush();
+    cur.push(w);
+    const endS = /[.?!]["')\]]*$/.test(w.text) && !/^(mr|mrs|ms|dr|st|vs|etc|e\.g|i\.e|u\.s)\.$/i.test(w.text);
+    if (endS || (cur[cur.length - 1].b - cur[0].a > 15 && /[,;:]$/.test(w.text)) || cur.length >= 40) flush();
+  }
+  flush();
+  return lines;
+}
+async function transcribeRef() {
+  if (!REF || ASR.busy) return;
+  if (IN_HOST && !window.__IL_MOCK_ASR) { $("asr-host").hidden = false; asrStatus(""); return; }
+  if (REF.isSample) { asrStatus("サンプル音声（合成音）は文字起こしできません。お手本の音声ファイルを読み込んでください。"); return; }
+  const model = $("asr-model").value;
+  ASR.busy = true; $("asr-run").disabled = true; asrBar(0);
+  asrStatus("文字起こしを準備しています…");
+  // cut at pauses into ≤25 s pieces so word timestamps stay reliable
+  const base = segment(REF.an, 0.3), pieces = []; let cs = null;
+  for (const sg of base) {
+    if (!cs) cs = { a: sg.a, b: sg.b };
+    else if ((sg.b - cs.a) / FPS <= 25) cs.b = sg.b;
+    else { pieces.push(cs); cs = { a: sg.a, b: sg.b }; }
+  }
+  if (cs) pieces.push(cs);
+  const hard = [];
+  for (const pc of pieces) { for (let a = pc.a; a <= pc.b; a += 2500) hard.push({ a, b: Math.min(pc.b, a + 2499) }); }
+  const chunks = hard.map(pc => {
+    const s0 = Math.max(0, (pc.a - 15) * HOP), s1 = Math.min(REF.samples.length, (pc.b + 15) * HOP + WIN);
+    return { audio: REF.samples.slice(s0, s1), offset: s0 / SR };
+  });
+  const words = [];
+  try {
+    await asrRun(model, chunks, (d) => {
+      onAsrProgress(d, `文字起こし中 0 / ${chunks.length}`);
+      if (d.type === "chunk") {
+        words.push(...parseWords(d.out, chunks[d.k].offset));
+        asrBar((d.k + 1) / chunks.length); asrStatus(`文字起こし中 ${d.k + 1} / ${chunks.length}`);
+      }
+    });
+  } catch (e) { asrStatus(asrErrorText(e)); asrBar(0); ASR.busy = false; $("asr-run").disabled = false; return; }
+  ASR.busy = false; $("asr-run").disabled = false; asrBar(1);
+  words.sort((x, y) => x.a - y.a);
+  const lines = buildLines(words);
+  if (!lines.length) { asrStatus("言葉を聞き取れませんでした。英語の音声か、雑音が多すぎないか確認してください。"); return; }
+  for (const k in takes) URL.revokeObjectURL(takes[k].url);
+  takes = {};
+  REF.transcript = lines;
+  $("script").value = lines.map(l => l.text).join("\n");
+  $("script-badge").textContent = "自動生成"; $("script-badge").hidden = false;
+  S.pause = "auto"; $("pause").value = "auto"; S.sel = 0;
+  resegment(); refreshAll();
+  asrStatus(`文字起こしが終わりました：${lines.length}行・${words.length}語。単語の位置も音声に合わせてあります。`);
+}
+$("asr-run").addEventListener("click", transcribeRef);
+if (IS_MOBILE) {
+  $("asr-model").value = "Xenova/whisper-tiny.en";
+  $("asr-model").querySelector('option[value="Xenova/whisper-small.en"]').textContent = "高精度（small・スマホでは重く失敗しやすい）";
+}
+if (IN_HOST && !window.__IL_MOCK_ASR) {
+  $("asr-host").hidden = false;
+  $("asr-run").disabled = true; $("asr-model").disabled = true;
+  $("asr-run").textContent = "文字起こし（HTMLファイル版のみ）";
+}
+function normWords(t) { return String(t).toLowerCase().replace(/[^a-z0-9'\s]/g, " ").split(/\s+/).filter(Boolean); }
+function lcsMark(exp, got) {
+  const n = exp.length, m = got.length, L = Array.from({ length: n + 1 }, () => new Int16Array(m + 1));
+  for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) L[i][j] = exp[i] === got[j] ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
+  const okE = new Array(n).fill(false), okG = new Array(m).fill(false);
+  let i = 0, j = 0;
+  while (i < n && j < m) { if (exp[i] === got[j]) { okE[i] = okG[j] = true; i++; j++; } else if (L[i + 1][j] >= L[i][j + 1]) i++; else j++; }
+  return { okE, okG };
+}
+async function transcribeTake(i) {
+  const tk = takes[i];
+  if (!tk || !ASR.ready || ASR.busy || !ASR.model) return;
+  ASR.busy = true;
+  try {
+    let text = "";
+    await asrRun(ASR.model, [{ audio: tk.samples.slice(0, Math.min(tk.samples.length, 29 * SR)), offset: 0 }], (d) => { if (d.type === "chunk") text = String(d.out.text || "").trim(); });
+    if (takes[i] !== tk) return;
+    tk.heard = text;
+    const exp = normWords(scriptLines()[i] || ""), got = normWords(text);
+    const { okE, okG } = lcsMark(exp, got);
+    tk.heardOk = okG; tk.missing = exp.filter((w, k) => !okE[k]);
+    if (i === S.sel) { renderRecorder(); renderFeedback(); }
+  } catch (e) { /* recognition of your take is optional */ }
+  finally { ASR.busy = false; }
+}
+
+/* ---------- key change: model voice moved into your pitch range (TD-PSOLA) ---------- */
+const CONV = { cache: new Map(), order: [], building: null };
+function userMedF() {
+  const v = Object.values(takes).map(t => t.an.medF).filter(x => isFinite(x) && x > 0);
+  return v.length ? median(v) : NaN;
+}
+function autoKey() {
+  const u = userMedF();
+  if (!REF || !isFinite(u) || !isFinite(REF.an.medF)) return null;
+  return Math.max(-12, Math.min(12, Math.round(12 * Math.log2(u / REF.an.medF))));
+}
+function keyValue() { const a = autoKey(); return S.key != null ? S.key : (a != null ? a : 0); }
+/* --- voice timbre estimate: long-term average spectrum (LTAS) of voiced frames --- */
+const NFFT = 1024;
+function fftPow(buf) {
+  const n = buf.length, re = Float64Array.from(buf), im = new Float64Array(n);
+  for (let i = 1, j = 0; i < n; i++) { let bit = n >> 1; for (; j & bit; bit >>= 1) j ^= bit; j ^= bit; if (i < j) { [re[i], re[j]] = [re[j], re[i]]; } }
+  for (let len = 2; len <= n; len <<= 1) {
+    const ang = -2 * Math.PI / len, wr = Math.cos(ang), wi = Math.sin(ang);
+    for (let i = 0; i < n; i += len) {
+      let cr = 1, ci = 0;
+      for (let k = 0; k < len / 2; k++) {
+        const ar = re[i + k], ai = im[i + k], br = re[i + k + len / 2] * cr - im[i + k + len / 2] * ci, bi = re[i + k + len / 2] * ci + im[i + k + len / 2] * cr;
+        re[i + k] = ar + br; im[i + k] = ai + bi; re[i + k + len / 2] = ar - br; im[i + k + len / 2] = ai - bi;
+        const t = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = t;
+      }
+    }
+  }
+  const p = new Float64Array(n / 2 + 1); for (let i = 0; i <= n / 2; i++) p[i] = re[i] * re[i] + im[i] * im[i];
+  return p;
+}
+function ltas(x, an) {
+  const idx = []; for (let i = 0; i < an.N; i++) if (an.voiced[i] && an.env[i] > an.maxEnv - 25) idx.push(i);
+  if (idx.length < 5) return null;
+  const step = Math.max(1, Math.floor(idx.length / 300)), acc = new Float64Array(NFFT / 2 + 1), buf = new Float64Array(NFFT);
+  let c = 0;
+  for (let q = 0; q < idx.length; q += step) {
+    const s0 = idx[q] * HOP + WIN / 2 - NFFT / 2;
+    if (s0 < 0 || s0 + NFFT > x.length) continue;
+    for (let k = 0; k < NFFT; k++) buf[k] = x[s0 + k] * (0.5 - 0.5 * Math.cos(2 * Math.PI * k / (NFFT - 1)));
+    const p = fftPow(buf); for (let k = 0; k < p.length; k++) acc[k] += p[k]; c++;
+  }
+  if (!c) return null;
+  const db = Array.from(acc, v => 10 * Math.log10(v / c + 1e-12));
+  return Array.from(movingAvg(Float32Array.from(db), 9));
+}
+const BIN = SR / NFFT;
+function detrend(xs, ys) {
+  const mx = mean(xs), my = mean(ys); let sxy = 0, sxx = 0;
+  for (let i = 0; i < xs.length; i++) { sxy += (xs[i] - mx) * (ys[i] - my); sxx += (xs[i] - mx) ** 2; }
+  const b = sxx ? sxy / sxx : 0; return ys.map((y, i) => y - my - b * (xs[i] - mx));
+}
+function corr(a, b) { const ma = mean(a), mb = mean(b); let s = 0, sa = 0, sb = 0; for (let i = 0; i < a.length; i++) { s += (a[i] - ma) * (b[i] - mb); sa += (a[i] - ma) ** 2; sb += (b[i] - mb) ** 2; } return sa && sb ? s / Math.sqrt(sa * sb) : 0; }
+function matchTimbre(R, U) {
+  // find the vocal-tract scale α so that your envelope U(f) ≈ model envelope R(f/α)
+  const at = (L, f) => { const b = f / BIN, i = Math.floor(b), t = b - i; return i + 1 < L.length ? L[i] * (1 - t) + L[i + 1] * t : L[L.length - 1]; };
+  const fs = []; for (let f = 250; f <= 4500; f += BIN) fs.push(f);
+  const lf = fs.map(f => Math.log2(f)), Ud = detrend(lf, fs.map(f => at(U, f)));
+  let best = 1, bc = -2;
+  for (let a = 0.8; a <= 1.25001; a += 0.01) { const c = corr(Ud, detrend(lf, fs.map(f => at(R, f / a)))); if (c > bc) { bc = c; best = a; } }
+  const d = (f0, f1) => { const v = []; for (let f = f0; f <= f1; f += BIN) v.push(at(U, f) - at(R, f / best)); return mean(v); };
+  const tilt = Math.max(-9, Math.min(9, d(2000, 5000) - d(300, 1000)));
+  return { alpha: Math.round(best * 100) / 100, tilt: Math.round(tilt * 2) / 2, confidence: bc };
+}
+let timbreKey = "", timbreVal = null;
+function autoTimbre() {
+  const list = Object.values(takes);
+  if (!REF || !list.length) return null;
+  const key = list.map(t => t.id).join(",") + "|" + REF.name;
+  if (key === timbreKey) return timbreVal;
+  if (!REF.ltas) REF.ltas = ltas(REF.samples, REF.an);
+  const Ls = list.map(t => t.ltas || (t.ltas = ltas(t.samples, t.an))).filter(Boolean);
+  timbreKey = key;
+  if (!REF.ltas || !Ls.length) { timbreVal = null; return null; }
+  const U = REF.ltas.map((_, k) => mean(Ls.map(L => L[k])));
+  timbreVal = matchTimbre(REF.ltas, U);
+  return timbreVal;
+}
+function fmtValue() { const a = autoTimbre(); return S.formant != null ? S.formant : (a ? Math.round(a.alpha * 100) : 100); }
+function tiltValue() { const a = autoTimbre(); return a ? a.tilt : 0; }
+
+/* --- pitch + formant shift (PSOLA with resampled grains) --- */
+function pitchShift(x, an, semis, alpha) {
+  alpha = alpha || 1;
+  if (!semis && Math.abs(alpha - 1) < 0.005) return x;
+  const r = Math.pow(2, semis / 12), N = x.length, out = new Float32Array(N);
+  const f0At = (t) => {
+    const i = Math.max(0, Math.min(an.N - 1, Math.round((t - WIN / 2) / HOP)));
+    return an.voiced[i] && !isNaN(an.st[i]) ? an.medF * Math.pow(2, an.st[i] / 12) : 0;
+  };
+  // analysis marks: one per glottal pulse in voiced parts, every 5 ms elsewhere
+  const marks = []; let t = 0, prevV = false;
+  while (t < N) {
+    const f = f0At(t);
+    if (f > 0) {
+      const P = Math.max(20, Math.round(SR / f));
+      let lo = prevV ? t - (P >> 2) : t, hi = prevV ? t + (P >> 2) : t + P;
+      lo = Math.max(0, lo); hi = Math.min(N - 1, hi);
+      let m = lo, mv = -Infinity; for (let q = lo; q <= hi; q++) if (x[q] > mv) { mv = x[q]; m = q; }
+      if (marks.length && m <= marks[marks.length - 1].t) m = marks[marks.length - 1].t + P;
+      if (m >= N) break;
+      marks.push({ t: m, P, v: true }); t = m + P; prevV = true;
+    } else { marks.push({ t, P: 80, v: false }); t += 80; prevV = false; }
+  }
+  if (!marks.length) return x;
+  // synthesis: each grain is read α× faster (moves formants by α) and re-spaced by the pitch ratio
+  let to = marks[0].t, mi = 0;
+  while (to < N) {
+    while (mi + 1 < marks.length && Math.abs(marks[mi + 1].t - to) <= Math.abs(marks[mi].t - to)) mi++;
+    const m = marks[mi], P = m.P, rr = m.v ? r : 1, g = m.v ? 1 / Math.sqrt(rr) : 1;
+    const L = Math.max(8, Math.round(P / alpha));
+    for (let k = -L; k < L; k++) {
+      const oi = to + k; if (oi < 0 || oi >= N) continue;
+      const sp = m.t + k * alpha, si = Math.floor(sp), fr = sp - si;
+      if (si < 0 || si + 1 >= N) continue;
+      out[oi] += (x[si] * (1 - fr) + x[si + 1] * fr) * (0.5 - 0.5 * Math.cos(Math.PI * (k + L) / L)) * g;
+    }
+    to += m.v ? Math.max(8, Math.round(P / rr)) : L;
+  }
+  let ex = 0, eo = 0; for (let i = 0; i < N; i++) { ex += x[i] * x[i]; eo += out[i] * out[i]; }
+  const gain = eo > 0 ? Math.sqrt(ex / eo) : 1;
+  for (let i = 0; i < N; i++) out[i] = Math.max(-1, Math.min(1, out[i] * gain));
+  return out;
+}
+async function shelf(x, gainDb) {
+  if (Math.abs(gainDb) < 0.5) return x;
+  const off = new OfflineAudioContext(1, x.length, SR), b = off.createBuffer(1, x.length, SR);
+  b.copyToChannel(x, 0);
+  const src = off.createBufferSource(); src.buffer = b;
+  const f = off.createBiquadFilter(); f.type = "highshelf"; f.frequency.value = 1800; f.gain.value = gainDb;
+  src.connect(f); f.connect(off.destination); src.start(0);
+  const y = (await off.startRendering()).getChannelData(0);
+  let ex = 0, ey = 0; for (let i = 0; i < x.length; i++) { ex += x[i] * x[i]; ey += y[i] * y[i]; }
+  const g = ey > 0 ? Math.sqrt(ex / ey) : 1, out = new Float32Array(y.length);
+  for (let i = 0; i < y.length; i++) out[i] = Math.max(-1, Math.min(1, y[i] * g));
+  return out;
+}
+function clearConv() {
+  for (const u of CONV.cache.values()) if (u) URL.revokeObjectURL(u);
+  CONV.cache.clear(); CONV.order = [];
+  audios.conv.removeAttribute("src"); audios.conv.dataset.url = "";
+  timbreKey = ""; timbreVal = null;
+}
+async function ensureConv() {
+  if (!REF) return false;
+  const semis = keyValue(), fm = fmtValue(), tilt = S.formant === 100 ? 0 : tiltValue();
+  const ck = semis + "|" + fm + "|" + tilt;
+  let url = CONV.cache.get(ck);
+  if (!url) {
+    $("key-info").textContent = `あなたの声のお手本を作成中…（キー ${fmtKey(semis)}・声質 ${fm}%）`;
+    await sleep(20);
+    let y = pitchShift(REF.samples, REF.an, semis, fm / 100);
+    y = await shelf(y, tilt);
+    url = URL.createObjectURL(wavBlob(y));
+    CONV.cache.set(ck, url); CONV.order.push(ck);
+    while (CONV.order.length > 6) { const old = CONV.order.shift(); if (old !== ck) { URL.revokeObjectURL(CONV.cache.get(old)); CONV.cache.delete(old); } }
+    renderVoice();
+  }
+  if (audios.conv.dataset.url !== url) { stopAll(); audios.conv.src = url; audios.conv.dataset.url = url; }
+  return true;
+}
+function fmtKey(k) { return k > 0 ? "+" + k : k < 0 ? "−" + Math.abs(k) : "0"; }
+function noteName(f) {
+  if (!isFinite(f)) return "—";
+  const names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"], n = Math.round(12 * Math.log2(f / 440) + 69);
+  return names[(n % 12 + 12) % 12] + (Math.floor(n / 12) - 1);
+}
+function renderVoice() {
+  if (!REF) return;
+  const k = keyValue(), a = autoKey(), u = userMedF(), rf = REF.an.medF, tb = autoTimbre(), fm = fmtValue();
+  $("key-val").innerHTML = `${fmtKey(k)}<small>${S.key == null && a != null ? "自動" : S.key === 0 ? "原曲キー" : "手動"}</small>`;
+  $("key-down").disabled = k <= -12; $("key-up").disabled = k >= 12;
+  $("key-auto").disabled = a == null;
+  $("fmt-val").innerHTML = `${fm}%<small>${S.formant == null && tb ? "自動" : S.formant === 100 ? "お手本のまま" : "手動"}</small>`;
+  $("fmt-down").disabled = fm <= 80; $("fmt-up").disabled = fm >= 125; $("fmt-auto").disabled = !tb;
+  const shifted = rf * Math.pow(2, k / 12);
+  $("key-info").textContent = isFinite(u)
+    ? `あなたの声：平均 ${Math.round(u)}Hz（${noteName(u)}）・声質 ${tb ? Math.round(tb.alpha * 100) + "%" : "—"}${tb && tb.tilt ? `・明るさ ${tb.tilt > 0 ? "+" : ""}${tb.tilt}dB` : ""} ／ お手本：${Math.round(rf)}Hz（${noteName(rf)}）`
+    : `録音すると、あなたの声の高さと声質を測って、お手本をあなたの声に近づけます。お手本の平均は ${Math.round(rf)}Hz（${noteName(rf)}）です。`;
+  const pos = (f) => Math.max(0, Math.min(100, (Math.log2(f / 70) / Math.log2(400 / 70)) * 100));
+  $("key-scale").innerHTML = `<i class="k-ref" style="left:${pos(rf)}%" title="お手本"></i>${isFinite(u) ? `<i class="k-mine" style="left:${pos(u)}%" title="あなた"></i>` : ""}<i class="k-conv" style="left:${pos(shifted)}%" title="調整後"></i>`;
+  $("key-scale-note").innerHTML = `<span style="color:var(--ref)">●</span> お手本 ・ <span style="color:var(--mine)">●</span> あなた ・ <span style="color:var(--conv)">●</span> 調整後（${Math.round(shifted)}Hz）。声質は100%より小さいほど太く低い響き、大きいほど細く明るい響きになります。高さ・声の太さ・明るさをあなたの録音に寄せた、似た声質の別人が読むイメージです。`;
+}
+function rebuildIfNeeded() { if (S.modelVoice === "conv" || !audios.conv.paused) ensureConv(); }
+function setKey(v) { S.key = v; renderVoice(); rebuildIfNeeded(); }
+function setFmt(v) { S.formant = v; renderVoice(); rebuildIfNeeded(); }
+$("key-down").addEventListener("click", () => setKey(Math.max(-12, keyValue() - 1)));
+$("key-up").addEventListener("click", () => setKey(Math.min(12, keyValue() + 1)));
+$("key-auto").addEventListener("click", () => setKey(null));
+$("key-orig").addEventListener("click", () => setKey(0));
+$("fmt-down").addEventListener("click", () => setFmt(Math.max(80, fmtValue() - 2)));
+$("fmt-up").addEventListener("click", () => setFmt(Math.min(125, fmtValue() + 2)));
+$("fmt-auto").addEventListener("click", () => setFmt(null));
+$("fmt-orig").addEventListener("click", () => setFmt(100));
+
+/* ---------- loading the model ---------- */
+async function loadRef(file) {
+  if (!file) return;
+  const err = $("err-ref"); err.hidden = true;
+  stopAll();
+  setStatus(`「${file.name}」を解析中…（長い音声は数秒かかります）`);
+  await sleep(20);
+  let dec;
+  try { dec = await decodeFile(file); }
+  catch (e) { err.hidden = false; err.textContent = "このファイルから音声を読み込めませんでした。MP3・M4A・MP4・WAV・WebM を試してください。"; setStatus(""); return; }
+  await sleep(20);
+  const an = analyze(dec.samples);
+  if (!an.rawNuclei.length) { err.hidden = false; err.textContent = "声がほとんど検出できませんでした。無音や雑音が多くないか確認してください。"; }
+  else if (dec.truncated) { err.hidden = false; err.textContent = `長い音声のため最初の${MAX_SEC / 60}分だけ解析しました。`; }
+  if (REF && REF.url) URL.revokeObjectURL(REF.url);
+  for (const k in takes) URL.revokeObjectURL(takes[k].url);
+  takes = {};
+  const url = URL.createObjectURL(file);
+  audios.ref.src = url;
+  clearConv();
+  REF = { name: file.name, samples: dec.samples, an, url, transcript: null, isSample: false };
+  $("name-ref").textContent = file.name;
+  $("script").value = ""; $("script-badge").hidden = true;
+  S.sel = 0;
+  resegment(); setStatus("");
+  recStatus("行を選んで「お手本を聞いてから録音」を押してください。");
+  refreshAll();
+  if (IN_HOST && !window.__IL_MOCK_ASR) { $("asr-host").hidden = false; asrStatus("スクリプトは手で貼り付けることもできます（1行に1文）。"); }
+  else transcribeRef();
+}
+function refreshAll() {
+  S.sel = Math.max(0, Math.min(Math.max(0, lineCount() - 1), S.sel));
+  $("meta-ref").textContent = REF ? `${fmt(REF.an.dur)} ・ ${REF.segs.length}行` : "";
+  renderLines(); renderLineDetail(); recUI();
+}
+$("file-ref").addEventListener("change", (e) => { loadRef(e.target.files[0]); e.target.value = ""; });
+const slot = $("slot-ref");
+slot.addEventListener("dragover", (e) => { e.preventDefault(); slot.classList.add("drag"); });
+slot.addEventListener("dragleave", () => slot.classList.remove("drag"));
+slot.addEventListener("drop", (e) => { e.preventDefault(); slot.classList.remove("drag"); const f = e.dataTransfer.files[0]; if (f) loadRef(f); });
+
+/* ---------- controls ---------- */
+function seg(id, cb) {
+  $(id).addEventListener("click", (e) => {
+    const b = e.target.closest("button"); if (!b || b.disabled) return;
+    $(id).querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    cb(b.dataset.v);
+  });
+}
+function setSeg(id, v) { $(id).querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x.dataset.v === v))); }
+seg("speed", (v) => { S.speed = +v; for (const k of PLAYERS) audios[k].playbackRate = S.speed; });
+seg("modelvoice", (v) => { S.modelVoice = v; if (v === "conv") ensureConv(); });
+seg("align", (v) => { S.align = v; pairCache.clear(); refreshAll(); });
+seg("wordmode", (v) => { S.wordmode = v; });
+seg("view", (v) => {
+  S.view = v;
+  $("zoom").querySelector('[data-v="fit"]').disabled = v === "all";
+  if (v === "all" && S.zoom === "fit") { S.zoom = "150"; setSeg("zoom", "150"); }
+  drawCharts();
+  if (v === "all") scrollToLine(); else $("scroller").scrollLeft = 0;
+});
+seg("zoom", (v) => {
+  const sc = $("scroller"), old = geo, center = old ? old.t0 + (sc.scrollLeft + sc.clientWidth / 2 - PADX) / (old.W - 2 * PADX) * (old.t1 - old.t0) : 0;
+  S.zoom = v; drawCharts();
+  if (geo) sc.scrollLeft = Math.max(0, geo.X(center) - sc.clientWidth / 2);
+});
+$("pause").addEventListener("change", (e) => { S.pause = e.target.value; resegment(); refreshAll(); });
+let stt = 0;
+$("script").addEventListener("input", () => {
+  clearTimeout(stt);
+  stt = setTimeout(() => { wordCache.clear(); if (S.pause === "auto") resegment(); refreshAll(); }, 450);
+});
+$("show-ref").addEventListener("change", (e) => { S.show.ref = e.target.checked; drawCharts(); });
+$("show-mine").addEventListener("change", (e) => { S.show.mine = e.target.checked; drawCharts(); });
+let rt = 0, lastW = 0;
+new ResizeObserver(() => { const w = $("scroller").clientWidth; if (w === lastW) return; lastW = w; clearTimeout(rt); rt = setTimeout(drawAll, 60); }).observe($("scroller"));
+new MutationObserver(drawAll).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+try { matchMedia("(prefers-color-scheme: dark)").addEventListener("change", drawAll); } catch (e) {}
+
+/* ---------- built-in sample (synthesized voices, clearly marked) ---------- */
+function synth(sylls) {
+  const total = sylls.reduce((s, x) => s + x.d + (x.g || 0) + 0.03, 0) + 0.4;
+  const out = new Float32Array(Math.ceil(total * SR));
+  let pos = Math.round(0.15 * SR), phase = 0, seed = 7;
+  const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647 - 0.5; };
+  for (const s of sylls) {
+    const n = Math.round(s.d * SR), f = s.f;
+    if (s.c) for (let i = 0; i < 0.03 * SR; i++) out[pos + i] += rnd() * 0.08 * s.a * (1 - i / (0.03 * SR));
+    const start = pos + (s.c ? Math.round(0.02 * SR) : 0);
+    for (let i = 0; i < n; i++) {
+      const u = i / n, sg = u * (f.length - 1), k = Math.min(f.length - 2, Math.floor(sg)), fr = f[k] + (f[k + 1] - f[k]) * (sg - k);
+      const f0 = fr * (1 + 0.004 * Math.sin(2 * Math.PI * 5.5 * i / SR) + 0.005 * rnd());
+      phase += 2 * Math.PI * f0 / SR;
+      let v = 0;
+      for (let h = 1; h <= 14; h++) { const hf = h * f0; v += (1 / h) * (0.6 + 2.2 * Math.exp(-(((hf - 700) / 220) ** 2)) + 1.4 * Math.exp(-(((hf - 1250) / 260) ** 2))) * Math.sin(h * phase); }
+      out[start + i] += v * 0.12 * s.a * Math.min(1, u / 0.12) * Math.min(1, (1 - u) / 0.25);
+    }
+    pos = start + n + Math.round((s.g || 0) * SR);
+  }
+  return out;
+}
+function wavBlob(x) {
+  const n = x.length, buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
+  const w = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+  w(0, "RIFF"); v.setUint32(4, 36 + n * 2, true); w(8, "WAVE"); w(12, "fmt "); v.setUint32(16, 16, true);
+  v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, SR, true); v.setUint32(28, SR * 2, true);
+  v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, "data"); v.setUint32(40, n * 2, true);
+  for (let i = 0; i < n; i++) v.setInt16(44 + i * 2, Math.max(-1, Math.min(1, x[i])) * 32767, true);
+  return new Blob([buf], { type: "audio/wav" });
+}
+function loadSample() {
+  const P = 0.7;
+  const L1 = [{ d: .15, f: [175, 185], a: .45, g: .01 }, { d: .13, f: [190, 182], a: .40, c: 1 }, { d: .09, f: [178, 172], a: .22, g: .05 }, { d: .36, f: [205, 265, 150], a: 1.0, g: .03, c: 1 }, { d: .24, f: [140, 112], a: .38, c: 1 }];
+  const L2 = [{ d: .2, f: [185, 200], a: .6, c: 1 }, { d: .08, f: [188, 182], a: .25 }, { d: .1, f: [182, 178], a: .28, c: 1 }, { d: .26, f: [205, 255, 205], a: 1.0, c: 1 }, { d: .18, f: [180, 130], a: .4 }];
+  const L3 = [{ d: .1, f: [178, 176], a: .3 }, { d: .06, f: [176, 175], a: .2 }, { d: .26, f: [200, 250, 210], a: 1.0, c: 1 }, { d: .09, f: [190, 185], a: .3, c: 1 }, { d: .12, f: [180, 175], a: .35, c: 1 }, { d: .34, f: [222, 205, 118], a: .85, c: 1 }];
+  const withPause = (L) => L.map((s, k) => k === L.length - 1 ? Object.assign({}, s, { g: P }) : s);
+  const refSamples = synth([...withPause(L1), ...withPause(L2), ...L3]);
+  const M1 = [{ d: .20, f: [205, 210], a: .80, g: .02 }, { d: .17, f: [212, 214], a: .78, g: .02, c: 1 }, { d: .16, f: [214, 211], a: .75, g: .02, c: 1 }, { d: .16, f: [210, 208], a: .74, g: .04, c: 1 }, { d: .24, f: [218, 225, 212], a: .85, g: .03, c: 1 }, { d: .24, f: [210, 198], a: .8, c: 1 }];
+  const M2 = [{ d: .22, f: [208, 214], a: .8, c: 1, g: .02 }, { d: .16, f: [214, 212], a: .75, g: .02 }, { d: .16, f: [212, 214], a: .75, c: 1, g: .02 }, { d: .2, f: [216, 222], a: .82, c: 1, g: .02 }, { d: .2, f: [220, 226], a: .78 }];
+  audios.ref.src = URL.createObjectURL(wavBlob(refSamples));
+  REF = { name: "sample-native.wav", samples: refSamples, an: analyze(refSamples), url: audios.ref.src, transcript: null, isSample: true };
+  $("name-ref").innerHTML = `sample-native.wav <span class="badge-sample">サンプル（合成音）</span>`;
+  resegment();
+  setTake(0, synth(M1), "サンプル録音（合成音）", true);
+  setTake(1, synth(M2), "サンプル録音（合成音）", true);
+  recStatus("行1・行2にはサンプルの録音が入っています。行3を選んで、自分で録音してみてください（Rキーでも開始）。");
+  asrStatus(IN_HOST ? "サンプルのスクリプトを表示中です。" : "サンプルのスクリプトを表示中です。お手本の音声を読み込むと、自動で文字起こしします（初回はモデルのダウンロードに少し時間がかかります）。");
+  refreshAll();
+}
+loadSample();
+})();
+</script>
+</body></html>
