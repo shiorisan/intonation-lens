@@ -57,7 +57,6 @@ button,label.btn{touch-action:manipulation;-webkit-tap-highlight-color:transpare
 
 /* header */
 .top{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.brand .eyebrow{font-size:12px;letter-spacing:.08em;color:var(--ink-3);font-weight:500}
 .brand h1{font-family:var(--display);font-weight:700;font-size:clamp(26px,4vw,36px);line-height:1.05;letter-spacing:-.02em}
 .brand h1 .dot{color:var(--mine)}
 
@@ -133,8 +132,6 @@ select.sel{border:1px solid var(--line);background:var(--surface);border-radius:
 .lane-head{position:sticky;left:0;display:inline-flex;align-items:center;gap:8px;font-size:12px;z-index:1;padding-right:6px;background:var(--surface);border-radius:6px}
 .lane-head .who{font-weight:700}
 .lane.ref .who{color:var(--ref)} .lane.mine .who{color:var(--mine)}
-.ftone{font-size:12px;color:var(--ink-2);background:var(--surface-2);border-radius:999px;padding:0 8px;white-space:nowrap}
-.ftone:empty{display:none}
 .lane canvas{display:block}
 .wrow{display:flex;align-items:baseline;white-space:nowrap;min-height:58px;padding:0 0 6px}
 .wrow.ref{--c:var(--ref);--c-soft:var(--ref-soft)} .wrow.mine{--c:var(--mine);--c-soft:var(--mine-soft)}
@@ -149,8 +146,7 @@ select.sel{border:1px solid var(--line);background:var(--surface);border-radius:
 
 /* listen + record, merged next to the line nav */
 .practice{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
-.pr-btns{display:flex;flex-wrap:wrap;gap:8px 22px;align-items:center}
-.pr-grp{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.pr-btns{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .btn.recbtn{background:var(--rec);border-color:var(--rec);color:var(--on-accent);font-weight:700}
 .btn .dot{width:10px;height:10px;border-radius:50%;background:currentColor;flex:none}
 .rec-status{font-size:13px;color:var(--ink-2)}
@@ -206,10 +202,8 @@ dialog.sheet::backdrop{background:rgba(10,16,22,.45)}
   .panel-head{order:1;display:block}
   .panel-head > .nav{display:none}
   .practice{gap:8px}
-  .pr-btns{flex-direction:column;align-items:stretch;gap:12px}
-  .pr-grp + .pr-grp{padding:12px;border:0;background:var(--surface-2);border-radius:12px}
   .source .row{flex:1 1 100%}
-  .source .row .btn,.pr-grp .btn{flex:1 1 auto}
+  .source .row .btn,.pr-btns .btn{flex:1 1 auto;padding-inline:10px}
   .line-card{width:min(72vw,240px)}
   .wrow{min-height:50px}
   .metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
@@ -234,7 +228,6 @@ dialog.sheet::backdrop{background:rgba(10,16,22,.45)}
 <div class="wrap">
   <header class="top">
     <div class="brand">
-      <div class="eyebrow">英語の抑揚・強勢ビジュアライザー</div>
       <h1>Intonation Lens<span class="dot">.</span></h1>
     </div>
     <button class="iconbtn gear" id="open-settings" type="button" aria-label="設定" aria-haspopup="dialog"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
@@ -270,21 +263,12 @@ dialog.sheet::backdrop{background:rgba(10,16,22,.45)}
       </div>
       <div class="practice">
         <div class="pr-btns">
-          <div class="pr-grp" role="group" aria-label="聞き比べ">
-            <button class="btn tone ref-c" id="lp-ref" type="button"><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg>お手本</button>
-            <button class="btn tone conv-c" id="lp-conv" type="button"><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg>あなたの声のお手本</button>
-            <button class="btn tone mine-c" id="lp-mine" type="button"><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg>あなたの録音</button>
-            <button class="btn" id="lp-both" type="button">お手本 → あなた</button>
-          </div>
-          <div class="pr-grp" role="group" aria-label="録音">
-            <button class="btn recbtn" id="rec-model" type="button"><span class="dot"></span>お手本を聞いてから録音</button>
-            <button class="btn tone rec-c" id="rec-now" type="button"><span class="dot"></span>すぐに録音</button>
-            <label class="btn" for="file-take">ファイルから</label>
-            <input class="vh" type="file" id="file-take" accept="audio/*,video/*,.mp3,.m4a,.mp4,.wav,.webm,.ogg,.aac,.mov">
-          </div>
+          <button class="btn tone ref-c" id="lp-ref" type="button"><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg>お手本</button>
+          <button class="btn recbtn" id="rec-model" type="button" title="お手本を聞いてから録音します"><span class="dot"></span>録音</button>
+          <button class="btn tone mine-c" id="lp-mine" type="button"><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg>あなたの録音</button>
         </div>
         <div class="meter" id="lvl-meter" aria-hidden="true" hidden><span id="lvl"></span></div>
-        <div class="rec-status" id="rec-status" role="status">お手本を聞いたあと、同じように読んでください。話し終えて1秒ほど黙ると自動で止まります。</div>
+        <div class="rec-status" id="rec-status" role="status">「録音」を押すとお手本が流れ、続けて録音が始まります。話し終えて1秒ほど黙ると自動で止まります。</div>
         <div class="err" id="mic-err" hidden></div>
         <div class="hist" id="hist">この行はまだ録音していません。</div>
       </div>
@@ -294,12 +278,12 @@ dialog.sheet::backdrop{background:rgba(10,16,22,.45)}
       <div class="scroller" id="scroller">
         <div class="inner" id="inner">
           <div class="lane ref">
-            <div class="lane-head"><span class="who">お手本</span><span class="ftone" id="tone-ref"></span></div>
+            <div class="lane-head"><span class="who">お手本</span></div>
             <canvas id="c-ref"></canvas>
             <div class="wrow ref" id="wrow-ref"></div>
           </div>
           <div class="lane mine">
-            <div class="lane-head"><span class="who">あなた</span><span class="ftone" id="tone-mine"></span></div>
+            <div class="lane-head"><span class="who">あなた</span></div>
             <canvas id="c-mine"></canvas>
             <div class="wrow mine" id="wrow-mine"></div>
           </div>
@@ -896,7 +880,7 @@ function renderHeader() {
   $("pos").innerHTML = n ? `行 ${S.sel + 1}<small> / ${n}</small>` : "—";
   $("prev").disabled = !n || S.sel <= 0; $("next").disabled = !n || S.sel >= n - 1;
   const has = !!takes[S.sel];
-  $("lp-mine").disabled = !has; $("lp-both").disabled = !has; $("lp-ref").disabled = !n; $("lp-conv").disabled = !n;
+  $("lp-mine").disabled = !has; $("lp-ref").disabled = !n;
   syncBar();
 }
 function syncBar() {
@@ -995,7 +979,7 @@ function renderMetrics() {
 }
 /* ---------- prosody view: per speaker, a smooth intonation contour drawn directly over stress-sized words ---------- */
 // Modelled on the interlinear tonetic stave used to teach English intonation: the pitch line runs above the text,
-// every syllable is a dot on that line (big = stressed), and the final (nuclear) tone is named per lane.
+// and every syllable is a dot on that line (big = stressed).
 const PADX = 14, BRIDGE = 30; // unvoiced gaps up to 0.3 s are bridged so a phrase reads as one connected curve
 function setupCanvas(cv, w, h) {
   let dpr = window.devicePixelRatio || 1;
@@ -1039,7 +1023,6 @@ function strokeContour(ctx, c, base, X, Y, step) {
   }
 }
 function valueNear(c, k) { for (let d = 0; d <= 12; d++) { if (!isNaN(c[k - d])) return c[k - d]; if (!isNaN(c[k + d])) return c[k + d]; } return NaN; }
-function toneOf(st) { const m = st.finalMove; return m < -1.5 ? "文末 ↘ 下降調" : m > 1.5 ? "文末 ↗ 上昇調" : "文末 → 平ら"; }
 function wordItems(i, who) {
   const words = wordTiming(i); if (!words) return [];
   const mw = who === "mine" ? mineWordStrengths(i, words) : null;
@@ -1058,7 +1041,7 @@ function drawCharts() {
     $("inner").style.width = clientW + "px";
     setupCanvas(cvR, clientW, CH); setupCanvas(cvM, clientW, CH);
     rowR.innerHTML = rowM.innerHTML = "";
-    $("tone-ref").textContent = $("tone-mine").textContent = ""; geo = null; return;
+    geo = null; return;
   }
   const segs = REF.segs, an = REF.an;
   let t0, t1;
@@ -1147,10 +1130,6 @@ function drawCharts() {
     for (const n of m.p.mst.nuclei) { const f = pairMineToRef(m.p, n.i); mineDots.push([X(f / FPS), Y(valueNear(m.c, f - m.p.rs.a)), n]); }
   }
   dots(M, mineDots, cMine);
-
-  $("tone-ref").textContent = toneOf(REF.stats[S.sel]);
-  const ps = getPair(S.sel);
-  $("tone-mine").textContent = ps ? toneOf(ps.mst) : "";
 }
 function drawAll() { drawCharts(); }
 
@@ -1203,9 +1182,7 @@ async function playModelRange(from, to, then, line, voice) {
 function playMineLine(then) { const tk = takes[S.sel]; if (tk) playTake(S.sel, tk.seg.a / FPS, tk.seg.b / FPS, then); }
 $("play-ref").addEventListener("click", () => { if (!audios.ref.paused) { stopAll(); return; } if (REF) playRange("ref", 0, Infinity, null, true); });
 $("lp-ref").addEventListener("click", () => { if (REF) { const s = REF.segs[S.sel]; playModelRange(s.a / FPS, s.b / FPS, null, S.sel, "orig"); } });
-$("lp-conv").addEventListener("click", () => { if (REF) { const s = REF.segs[S.sel]; playModelRange(s.a / FPS, s.b / FPS, null, S.sel, "conv"); } });
 $("lp-mine").addEventListener("click", () => playMineLine());
-$("lp-both").addEventListener("click", () => REF && playRefLine(() => playMineLine()));
 
 function markWords(line, frame) {
   let key = "";
@@ -1257,16 +1234,15 @@ $("inner").addEventListener("click", (e) => {
 /* ---------- recorder ---------- */
 const rec = { state: "idle" };
 function recUI() {
-  const bm = $("rec-model"), bn = $("rec-now");
+  const bm = $("rec-model");
   if (rec.state === "recording") {
-    bm.innerHTML = `<span class="dot"></span>停止して解析`; bm.classList.add("recording"); bm.disabled = false; bn.disabled = true;
+    bm.innerHTML = `<span class="dot"></span>停止`; bm.classList.add("recording"); bm.disabled = false;
   } else if (rec.state === "model") {
-    bm.innerHTML = `<span class="dot"></span>お手本を再生中…`; bm.classList.remove("recording"); bm.disabled = true; bn.disabled = true;
+    bm.innerHTML = `<span class="dot"></span>お手本を再生中…`; bm.classList.remove("recording"); bm.disabled = true;
   } else {
-    bm.innerHTML = `<span class="dot"></span>お手本を聞いてから録音`; bm.classList.remove("recording");
-    bm.disabled = rec.state !== "idle" || !REF; bn.disabled = rec.state !== "idle" || !REF;
+    bm.innerHTML = `<span class="dot"></span>録音`; bm.classList.remove("recording");
+    bm.disabled = rec.state !== "idle" || !REF;
   }
-  $("file-take").disabled = rec.state !== "idle";
   $("lvl-meter").hidden = rec.state !== "recording";
   syncBar();
 }
@@ -1287,11 +1263,11 @@ function micError(e) {
   const name = e && e.name;
   const onClaude = /claude|anthropic/i.test(location.hostname) || window.self !== window.top;
   if (onClaude && (name === "NotAllowedError" || name === "SecurityError"))
-    el.textContent = "Claude の中で開いたページでは、安全設定でマイクを使えません。Safari や Chrome で https://shiorisan.github.io/intonation-lens/ を開くと、その場で録音できます。今は「ファイルから」で録音ファイルを読み込めます。";
+    el.textContent = "Claude の中で開いたページでは、安全設定でマイクを使えません。Safari や Chrome で https://shiorisan.github.io/intonation-lens/ を開くと、その場で録音できます。";
   else if (name === "NotAllowedError" || name === "SecurityError")
     el.textContent = "マイクの使用が許可されていません。アドレスバーのマイクのアイコンから許可して、もう一度押してください。";
   else if (name === "NotFoundError") el.textContent = "マイクが見つかりませんでした。マイクを接続してから、もう一度押してください。";
-  else el.textContent = "マイクを使えませんでした。「ファイルから」で録音ファイルを読み込めます。";
+  else el.textContent = "マイクを使えませんでした。ブラウザのマイク設定を確認して、もう一度押してください。";
 }
 async function startRec(withModel) {
   if (!REF || rec.state !== "idle") return;
@@ -1357,14 +1333,6 @@ async function stopRec() {
   setTake(line, samples, "マイク録音");
 }
 $("rec-model").addEventListener("click", () => rec.state === "recording" ? stopRec() : startRec(true));
-$("rec-now").addEventListener("click", () => startRec(false));
-$("file-take").addEventListener("change", async (e) => {
-  const f = e.target.files[0]; e.target.value = ""; if (!f || !REF) return;
-  const line = S.sel;
-  recStatus(`「${f.name}」を解析中…`);
-  try { const d = await decodeFile(f); setTake(line, d.samples, f.name); }
-  catch (err) { recStatus("このファイルから音声を読み込めませんでした。MP3・M4A・WAV などを試してください。"); }
-});
 function setTake(i, samples, label, silent) {
   const an = analyze(samples);
   if (!an.rawNuclei.length) { recStatus("声がほとんど検出できませんでした。マイクに近づいて、もう一度どうぞ。"); return; }
@@ -1746,7 +1714,7 @@ async function loadRef(file) {
   SCRIPT = "";
   S.sel = 0;
   resegment(); setStatus("");
-  recStatus("行を選んで「お手本を聞いてから録音」を押してください。");
+  recStatus("行を選んで「録音」を押してください。お手本が流れたあと、すぐに録音が始まります。");
   refreshAll();
   if (IN_HOST && !window.__IL_MOCK_ASR) { $("asr-host").hidden = false; asrStatus(""); }
   else transcribeRef();
