@@ -1,10 +1,10 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Intonation Lens</title></head><body style="margin:0">
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Intonation Lens</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700;12..96,800&family=IBM+Plex+Sans+JP:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: model + script on top, then line list, then one practice panel (script words sized by stress → recorder → stacked charts) */
+/* Layout: source file → line list → one practice panel (prosody view: intonation contour over stress-sized words → listen → record). Settings live in a dialog. */
 :root{
   --bg:#EEF2F4; --surface:#FFFFFF; --surface-2:#F4F7F8; --band:#EAF0F3; --ink:#15212B; --ink-2:#4A5A67; --ink-3:#7C8B97;
   --line:#D8E0E6; --grid:#E3E9ED;
@@ -42,34 +42,26 @@
   --good:#6FCF8E; --good-bg:#18352A; --warn:#F2B35B; --warn-bg:#3A2C14; --focus:#7FB2F0; --on-accent:#0E151B;
 }
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.7;padding-inline:clamp(16px,4vw,40px);padding-block:28px 56px}
-.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.7;padding-inline:clamp(16px,4vw,40px);padding-block:20px 48px}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
 h1,h2,h3{margin:0;text-wrap:balance}
 p{margin:0}
-button,select,input,textarea{font:inherit;color:inherit}
-button,label.btn,summary{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+button,select,input{font:inherit;color:inherit}
+button,label.btn{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 :focus-visible{outline:2px solid var(--focus);outline-offset:2px}
-
-header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px}
-.brand .eyebrow{font-size:12px;letter-spacing:.08em;color:var(--ink-3);font-weight:500}
-.brand h1{font-family:var(--display);font-weight:700;font-size:clamp(30px,5vw,44px);line-height:1.05;letter-spacing:-.02em}
-.brand h1 .dot{color:var(--mine)}
-.brand p{color:var(--ink-2);max-width:64ch;margin-top:6px}
-.privacy{font-size:12px;color:var(--ink-3)}
-
-.top-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:14px}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px;transition:border-color .15s,box-shadow .15s;min-width:0}
-.card.drag{border-color:var(--ref);box-shadow:0 0 0 3px var(--ref-soft)}
-.card h3{font-size:13px;font-weight:700}
-.slot-head{display:flex;align-items:center;gap:10px;min-width:0}
-.chip{font-size:12px;font-weight:700;padding:2px 10px;border-radius:999px;white-space:nowrap}
-.chip.ref{background:var(--ref-soft);color:var(--ref)}
-.fname{font-family:var(--mono);font-size:13px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
-.badge-sample{font-size:11px;border:1px dashed var(--ink-3);color:var(--ink-3);border-radius:4px;padding:0 6px;white-space:nowrap}
-.wave-wrap{position:relative;height:64px;border-radius:8px;background:var(--surface-2);overflow:hidden;cursor:pointer}
-.wave-wrap.sm{height:44px;background:var(--surface)}
-.wave-wrap canvas{width:100%;height:100%;display:block}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.hint-s{font-size:12px;color:var(--ink-3);line-height:1.55}
+.err{font-size:13px;color:var(--warn);background:var(--warn-bg);border-radius:8px;padding:8px 12px;line-height:1.6}
 .row{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+
+/* header */
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand .eyebrow{font-size:12px;letter-spacing:.08em;color:var(--ink-3);font-weight:500}
+.brand h1{font-family:var(--display);font-weight:700;font-size:clamp(26px,4vw,36px);line-height:1.05;letter-spacing:-.02em}
+.brand h1 .dot{color:var(--mine)}
+
+/* buttons */
 .btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:5px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:14px;white-space:nowrap}
 @media (hover:hover){.btn:hover{border-color:var(--ink-3)}}
 .btn:disabled{opacity:.45;cursor:default}
@@ -77,20 +69,37 @@ header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-be
 .btn.tone{border-color:var(--c);color:var(--c);font-weight:500}
 .ref-c{--c:var(--ref)} .mine-c{--c:var(--mine)} .rec-c{--c:var(--rec)} .conv-c{--c:var(--conv)}
 .btn svg{width:12px;height:12px;fill:currentColor;flex:none}
-.meta{font-family:var(--mono);font-size:12px;color:var(--ink-3);margin-left:auto}
-.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-.hint-s{font-size:12px;color:var(--ink-3);line-height:1.55}
-.err{font-size:13px;color:var(--warn);background:var(--warn-bg);border-radius:8px;padding:8px 12px;line-height:1.6}
-textarea#script{width:100%;min-height:112px;resize:vertical;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-family:var(--mono);font-size:13px;line-height:1.6}
-
-.controls{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;font-size:13px;color:var(--ink-2)}
-.grp{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.iconbtn{border:1px solid var(--line);background:var(--surface);border-radius:8px;width:32px;height:32px;cursor:pointer;display:grid;place-items:center;flex:none}
+.iconbtn:disabled{opacity:.35;cursor:default}
+.iconbtn svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.iconbtn.gear{width:42px;height:42px;border-radius:12px}
+.iconbtn.gear svg{width:20px;height:20px}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface)}
 .seg button{border:0;background:transparent;padding:5px 10px;cursor:pointer;font-size:13px;white-space:nowrap}
 .seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
 .seg button:disabled{opacity:.4;cursor:default}
-select.sel{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:4px 8px;font-size:13px;max-width:100%}
+select.sel{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 8px;font-size:14px;max-width:100%}
+.meter{height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden;border:1px solid var(--line)}
+.meter span{display:block;height:100%;width:0;background:var(--rec);transition:width .06s linear}
 
+/* source file */
+.source{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;transition:border-color .15s,box-shadow .15s}
+.source.drag{border-color:var(--ref);box-shadow:0 0 0 3px var(--ref-soft)}
+.src-name{display:flex;align-items:center;gap:8px;min-width:0;flex:1 1 240px}
+.chip{font-size:12px;font-weight:700;padding:2px 10px;border-radius:999px;white-space:nowrap;background:var(--ref-soft);color:var(--ref)}
+.fname{font-family:var(--mono);font-size:13px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.badge-sample{font-size:11px;border:1px dashed var(--ink-3);color:var(--ink-3);border-radius:4px;padding:0 6px;white-space:nowrap;font-family:var(--body)}
+.meta{font-family:var(--mono);font-size:12px;color:var(--ink-3);white-space:nowrap}
+.asr{flex-basis:100%;display:flex;flex-direction:column;gap:4px}
+.asr .meter{display:none}
+.asr.busy .meter{display:block}
+.meter.asr-m span{background:var(--ref);transition:width .2s}
+.asr.busy #asr-status{color:var(--ref);font-weight:500}
+.source .err{flex-basis:100%}
+.status{font-size:13px;color:var(--ink-2);flex-basis:100%}
+.status:empty{display:none}
+
+/* line list */
 .lines-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 14px;margin-bottom:6px}
 .lines-head h2{font-family:var(--display);font-size:20px;font-weight:700}
 .lines{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 8px;scroll-snap-type:x proximity}
@@ -102,73 +111,69 @@ select.sel{border:1px solid var(--line);background:var(--surface);border-radius:
 .line-card .tm{font-family:var(--mono);font-size:11px;color:var(--ink-3);margin-left:auto}
 .line-card .tx{font-size:13px;color:var(--ink-2);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;min-height:2.9em;line-height:1.45}
 .line-card .tx.empty{color:var(--ink-3)}
-
-.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:14px;min-width:0}
-.panel-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px 16px}
-.panel-head h2{font-family:var(--display);font-size:20px;font-weight:700;letter-spacing:-.01em}
-.nav{display:flex;align-items:center;gap:6px}
-.nav .pos{font-family:var(--display);font-weight:700;font-size:20px;min-width:5.5em;text-align:center;font-variant-numeric:tabular-nums}
-.nav .pos small{font-family:var(--mono);font-size:12px;color:var(--ink-3);font-weight:400}
-.iconbtn{border:1px solid var(--line);background:var(--surface);border-radius:8px;width:32px;height:32px;cursor:pointer;display:grid;place-items:center}
-.iconbtn:disabled{opacity:.35;cursor:default}
-.iconbtn svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2}
-
-/* script display: words sized by stress */
-.script-view{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 14px;align-items:center;padding:6px 0 2px}
-.who{font-size:12px;font-weight:700;white-space:nowrap}
-.who.ref{color:var(--ref)} .who.mine{color:var(--mine)}
-.wline{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;min-height:56px;min-width:0}
-.wline.ref{--c:var(--ref);--c-soft:var(--ref-soft)} .wline.mine{--c:var(--mine);--c-soft:var(--mine-soft)}
-.wline .empty{font-size:14px;color:var(--ink-3);align-self:center}
-.word{border:0;background:none;padding:2px 4px;border-radius:6px;cursor:pointer;font-family:var(--display);line-height:1.15;color:var(--ink);display:inline-flex;align-items:baseline}
-@media (hover:hover){.word:hover{background:var(--surface-2)}}
-.word.now{background:var(--c-soft)}
-.syl{display:inline-block;transition:font-size .2s}
-.syl.s{color:var(--c);font-weight:800}
-.syl.w{color:var(--ink-2)}
-.syl + .syl{margin-left:1px}
-
-/* recorder */
-.recorder{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:12px;background:var(--surface-2);border-radius:12px;padding:12px}
-@media (max-width:760px){.recorder{grid-template-columns:1fr}}
-.rec-main{display:flex;flex-direction:column;gap:8px;min-width:0}
-.rec-title{font-size:13px;font-weight:700;color:var(--mine)}
-.btn.recbtn{background:var(--rec);border-color:var(--rec);color:var(--on-accent);font-weight:700}
-.btn .dot{width:10px;height:10px;border-radius:50%;background:currentColor;flex:none}
-.meter{height:8px;border-radius:4px;background:var(--surface);overflow:hidden;border:1px solid var(--line)}
-.meter span{display:block;height:100%;width:0;background:var(--rec);transition:width .06s linear}
-.rec-status{font-size:13px;color:var(--ink-2);min-height:1.6em}
-.rec-status.live{color:var(--rec);font-weight:700}
-.hist{font-family:var(--mono);font-size:12px;color:var(--ink-3);line-height:1.6}
-.hist b{color:var(--ink)}
-@keyframes pulse{50%{opacity:.35}}
-.recording .dot{animation:pulse 1s infinite}
-
-.subbar{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;font-size:13px;color:var(--ink-2)}
-.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--ink-2);align-items:center;margin-left:auto}
-.legend label{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
-.sw{display:inline-block;width:22px;height:4px;border-radius:2px}
-.chart{display:grid;grid-template-columns:44px minmax(0,1fr);border-top:1px solid var(--line);padding-top:8px}
-.chart canvas{display:block}
-.scroller{overflow-x:auto;overflow-y:hidden;min-width:0;cursor:crosshair}
-.inner{position:relative}
-.wrow{position:relative;height:46px;border-top:1px solid var(--grid);border-bottom:1px solid var(--grid)}
-.wbtn{position:absolute;top:0;bottom:0;border:0;background:transparent;display:flex;align-items:center;justify-content:center;white-space:nowrap;cursor:pointer;font-family:var(--display);color:var(--ink);border-left:1px dashed var(--line);padding:0 2px;--c:var(--ref)}
-.wbtn.now{background:var(--ref-soft)}
-@media (hover:hover){.wbtn:hover{background:var(--ref-soft)}}
-.axis-note{display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--ink-3)}
-.playhead{position:absolute;top:0;bottom:0;width:2px;background:var(--ink);opacity:.6;pointer-events:none;display:none;z-index:2}
-#ph-wave-ref{background:var(--ref);opacity:.9}
-#ph-wave-mine{background:var(--mine);opacity:.9}
-
-.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:12px}
-.metric{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px}
-.metric .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
-.metric h3{font-size:13px;font-weight:500;color:var(--ink-2)}
 .pill{font-size:11px;font-weight:700;border-radius:999px;padding:1px 8px;white-space:nowrap}
 .pill.good{background:var(--good-bg);color:var(--good)}
 .pill.warn{background:var(--warn-bg);color:var(--warn)}
 .pill.none{background:var(--surface-2);color:var(--ink-3)}
+
+/* practice panel */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.panel-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px 16px}
+.nav{display:flex;align-items:center;gap:6px}
+.nav .pos{font-family:var(--display);font-weight:700;font-size:20px;min-width:5.5em;text-align:center;font-variant-numeric:tabular-nums}
+.nav .pos small,.mb-pos small{font-family:var(--mono);font-size:12px;color:var(--ink-3);font-weight:400}
+.lbl{font-size:12px;font-weight:700;color:var(--ink-2);letter-spacing:.04em}
+
+/* prosody view: per speaker, a smooth F0 contour sits directly above the words; word size = stress */
+.prosody{display:flex;flex-direction:column;gap:6px;min-width:0}
+.scroller{overflow-x:auto;overflow-y:hidden;min-width:0;cursor:pointer}
+.inner{position:relative}
+.lane{position:relative}
+.lane + .lane{margin-top:4px;padding-top:8px;border-top:1px dashed var(--line)}
+.lane-head{position:sticky;left:0;display:inline-flex;align-items:center;gap:8px;font-size:12px;z-index:1;padding-right:6px;background:var(--surface);border-radius:6px}
+.lane-head .who{font-weight:700}
+.lane.ref .who{color:var(--ref)} .lane.mine .who{color:var(--mine)}
+.tone{font-size:12px;color:var(--ink-2);background:var(--surface-2);border-radius:999px;padding:0 8px;white-space:nowrap}
+.tone:empty{display:none}
+.lane canvas{display:block}
+.wrow{display:flex;align-items:baseline;white-space:nowrap;min-height:58px;padding:0 0 6px}
+.wrow.ref{--c:var(--ref);--c-soft:var(--ref-soft)} .wrow.mine{--c:var(--mine);--c-soft:var(--mine-soft)}
+.wbtn{flex:none;border:0;background:none;padding:2px 2px;border-radius:6px;cursor:pointer;font-family:var(--display);line-height:1.15;color:var(--ink);display:inline-flex;align-items:baseline}
+.wbtn.now{background:var(--c-soft)}
+@media (hover:hover){.wbtn:hover{background:var(--surface-2)}}
+.syl{display:inline-block}
+.syl.s{color:var(--c);font-weight:800}
+.syl.w{color:var(--ink-2)}
+.syl + .syl{margin-left:1px}
+.lane-empty{position:sticky;left:0;font-size:13px;color:var(--ink-3);align-self:center;white-space:normal;max-width:min(560px,calc(100vw - 72px));line-height:1.5;padding-left:2px}
+.pv-key{display:flex;flex-wrap:wrap;gap:2px 14px;font-size:12px;color:var(--ink-3);align-items:center}
+.pv-key i{display:inline-block;vertical-align:middle;margin-right:4px}
+.pv-key .k-line{width:18px;height:3px;border-radius:2px;background:var(--ink-2)}
+.pv-key .k-dash{width:18px;border-top:2px dashed var(--ref);opacity:.7}
+.pv-key .k-dot{width:9px;height:9px;border-radius:50%;background:var(--ink-2)}
+.playhead{position:absolute;top:0;bottom:0;width:2px;background:var(--ink);opacity:.6;pointer-events:none;display:none;z-index:2}
+
+/* listen + record */
+.listen{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.listen .lbl{margin-right:2px}
+.recorder{display:flex;flex-direction:column;gap:8px;background:var(--surface-2);border-radius:12px;padding:12px}
+.rec-title{font-size:13px;font-weight:700;color:var(--mine)}
+.btn.recbtn{background:var(--rec);border-color:var(--rec);color:var(--on-accent);font-weight:700}
+.btn .dot{width:10px;height:10px;border-radius:50%;background:currentColor;flex:none}
+.rec-status{font-size:13px;color:var(--ink-2);min-height:1.6em}
+.rec-status.live{color:var(--rec);font-weight:700}
+.hist{font-family:var(--mono);font-size:12px;color:var(--ink-3);line-height:1.6}
+.hist b{color:var(--ink)}
+.heard{color:var(--ink-2)}
+.heard .x{color:var(--warn);text-decoration:underline wavy;text-underline-offset:3px}
+@keyframes pulse{50%{opacity:.35}}
+.recording .dot{animation:pulse 1s infinite}
+
+/* metrics */
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:12px}
+.metric{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.metric .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.metric h3{font-size:13px;font-weight:500;color:var(--ink-2)}
 .big{font-family:var(--display);font-size:30px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
 .big small{font-family:var(--body);font-size:13px;font-weight:500;color:var(--ink-3);margin-left:4px}
 .bars{display:flex;flex-direction:column;gap:4px;font-family:var(--mono);font-size:11px;color:var(--ink-3)}
@@ -177,308 +182,193 @@ select.sel{border:1px solid var(--line);background:var(--surface);border-radius:
 .bar .fill{display:block;height:100%;border-radius:3px}
 .bar .v{text-align:right;font-variant-numeric:tabular-nums}
 .metric .hint{font-size:12px;color:var(--ink-3);line-height:1.55}
-.feedback{display:flex;flex-direction:column;gap:10px;margin:0;padding:0;list-style:none}
-.feedback li{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start}
-.feedback .pill{margin-top:3px}
 
-.guide{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:14px}
-.guide section{background:var(--surface-2);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:8px}
-.guide h3{font-family:var(--display);font-size:17px;font-weight:700}
-.guide p,.guide li{font-size:14px;color:var(--ink-2)}
-.guide ol,.guide ul{margin:0;padding-left:1.3em;display:flex;flex-direction:column;gap:4px}
-.ex{font-family:var(--mono);font-size:13px;color:var(--ink)}
-.ex b{color:var(--ref)}
-.status{font-size:13px;color:var(--ink-2)}
-.voicebar{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:10px 18px;align-items:start;border:1px solid var(--line);border-radius:12px;padding:12px}
-@media (max-width:820px){.voicebar{grid-template-columns:1fr}}
-.vb-col{display:flex;flex-direction:column;gap:8px;min-width:0}
-.vb-lbl{font-size:12px;font-weight:700;color:var(--ink-2);letter-spacing:.04em}
-.keybox{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.keybtn{border:1px solid var(--conv);color:var(--conv);background:var(--surface);border-radius:8px;width:38px;height:34px;cursor:pointer;font-size:18px;font-weight:700;line-height:1}
-.keybtn:disabled{opacity:.35;cursor:default}
-.keyval{font-family:var(--display);font-weight:800;font-size:28px;min-width:2.6em;text-align:center;color:var(--conv);font-variant-numeric:tabular-nums;line-height:1}
-.keyval small{display:block;font-family:var(--body);font-size:11px;font-weight:500;color:var(--ink-3);margin-top:2px}
-.keyscale{position:relative;height:6px;border-radius:3px;background:var(--surface-2);margin-top:2px}
-.keyscale i{position:absolute;top:-3px;width:12px;height:12px;border-radius:50%;transform:translateX(-50%)}
-.keyscale .k-ref{background:var(--ref)} .keyscale .k-mine{background:var(--mine)} .keyscale .k-conv{background:var(--conv);box-shadow:0 0 0 2px var(--surface)}
-.meter.asr span{background:var(--ref);transition:width .2s}
-.heard{color:var(--ink-2)}
-.heard .x{color:var(--warn);text-decoration:underline wavy;text-underline-offset:3px}
-.card .slot-head h3{margin-right:auto}
-.tune summary{cursor:pointer;list-style-position:inside}
-.tune-body{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+/* settings dialog (bottom sheet on phones) */
+dialog.sheet{border:0;padding:0;border-radius:16px;background:var(--surface);color:var(--ink);width:min(560px,calc(100vw - 32px));max-height:min(86vh,780px);box-shadow:0 20px 60px rgba(0,0,0,.25)}
+dialog.sheet::backdrop{background:rgba(10,16,22,.45)}
+.sheet-in{display:flex;flex-direction:column;gap:16px;padding:0 18px 20px}
+.sheet-head{display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--surface);padding:14px 0 6px;z-index:1}
+.sheet-head h2{font-family:var(--display);font-size:20px;font-weight:700}
+.set-grp{display:flex;flex-direction:column;gap:6px}
+.set-grp .seg{display:flex;width:100%}
+.set-grp .seg button{flex:1;padding:7px 6px}
+.set-grp select.sel{width:100%}
+.set-sec{font-size:11px;font-weight:700;color:var(--ink-3);letter-spacing:.08em;border-top:1px solid var(--line);padding-top:12px;margin-bottom:-6px}
+.privacy{font-size:12px;color:var(--ink-3)}
+
 @media (hover:none){.kbd-hint{display:none}}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}.recording .dot{animation:none}}
 
-/* mobile: bottom action bar (line nav + listen + record) */
+/* phones */
 .mbar{display:none}
 @media (max-width:640px){
-  :root{--wscale:.8}
-  body{padding-block:18px calc(84px + env(safe-area-inset-bottom))}
-  .wrap{gap:16px}
-  .brand p{font-size:14px}
-  .card{padding:12px}
-  .panel{padding:14px 12px;border-radius:12px;gap:12px}
+  :root{--wscale:.7}
+  body{padding-block:14px calc(84px + env(safe-area-inset-bottom))}
+  .wrap{gap:14px}
+  .panel{padding:12px;border-radius:12px;gap:12px}
   .btn{min-height:44px;padding:8px 14px;justify-content:center}
-  .iconbtn,.keybtn{width:44px;height:44px}
-  select.sel{width:100%;min-height:44px;font-size:16px}
-  textarea#script{font-size:16px}
-  .seg{display:flex;width:100%}
-  .seg button{flex:1;min-height:42px;padding:8px 6px}
-  .controls,.subbar{flex-direction:column;align-items:stretch;gap:12px}
-  .grp{flex-direction:column;align-items:stretch;gap:4px}
-  .panel-head{flex-direction:column;align-items:stretch;gap:12px}
-  .panel-head > .nav{display:none}
-  .legend{margin-left:0}
-  .legend input{width:20px;height:20px}
-  .lines-head{margin-bottom:4px}
+  .iconbtn{width:44px;height:44px}
+  select.sel{min-height:44px;font-size:16px}
+  .seg button,.set-grp .seg button{min-height:42px;padding:8px 6px}
+  .panel-head{display:none}
+  .source .row{flex:1 1 100%}
+  .source .row .btn,.listen .btn,.recorder .row .btn{flex:1 1 auto}
+  .listen .lbl{flex-basis:100%}
   .line-card{width:min(72vw,240px)}
-  .voicebar{padding:10px}
-  .voicebar .row .btn,.recorder .row .btn{flex:1 1 auto}
-  .keybox .btn{flex:1}
-  .script-view{grid-template-columns:minmax(0,1fr);gap:0}
-  .who{margin-top:4px}
-  .wline{min-height:44px;gap:2px 6px}
-  .word{padding:4px}
-  .recorder{padding:10px}
+  .wrow{min-height:50px}
   .metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
   .metric{padding:12px;gap:6px}
+  .metric .top{flex-wrap:wrap;gap:4px}
   .metric h3{font-size:12px}
   .big{font-size:24px}
   .big small{font-size:11px}
   .metric .hint{display:none}
-  .metric .top{flex-wrap:wrap;gap:4px}
   .bar{grid-template-columns:auto minmax(0,1fr) auto;gap:6px;white-space:nowrap}
-  /* practice first: words → listen → record, then the less-used settings */
-  .script-view{order:-3}
-  .voicebar{order:-2}
-  .recorder{order:-1}
-  .axis-note{font-size:11px}
-  .guide section{padding:14px}
-  .feedback li{gap:8px}
+  dialog.sheet{width:100vw;max-width:100vw;margin:auto 0 0;border-radius:16px 16px 0 0;max-height:88vh}
+  .sheet-in{padding-bottom:calc(20px + env(safe-area-inset-bottom))}
   .mbar{display:flex;align-items:center;gap:6px;position:fixed;left:0;right:0;bottom:0;z-index:20;padding:8px 10px calc(8px + env(safe-area-inset-bottom));background:var(--surface);border-top:1px solid var(--line);box-shadow:0 -4px 16px rgba(0,0,0,.08)}
-  .mbar .iconbtn{flex:none}
   .mb-pos{font-family:var(--display);font-weight:700;font-size:15px;min-width:3.6em;text-align:center;white-space:nowrap;font-variant-numeric:tabular-nums}
-  .mb-pos small{font-family:var(--mono);font-size:11px;color:var(--ink-3);font-weight:400}
+  .mb-pos small{font-size:11px}
   .mbar .btn{flex:1;min-width:0;padding:8px 6px}
   body.typing .mbar{display:none}
 }
-@media (prefers-reduced-motion: reduce){*{transition:none!important}.recording .dot{animation:none}}
 </style>
+</head><body>
 
 <div class="wrap">
-  <header>
+  <header class="top">
     <div class="brand">
       <div class="eyebrow">英語の抑揚・強勢ビジュアライザー</div>
       <h1>Intonation Lens<span class="dot">.</span></h1>
-      <p>お手本の音声を読み込むと自動で文字起こしし、1文ずつ単語の強勢を文字の大きさで表示します。お手本を聞いたらその場で録音して、抑揚と強弱を重ねて比べられます。</p>
     </div>
-    <div class="privacy">音声はこのブラウザ内だけで解析され、外部には送信されません。</div>
+    <button class="iconbtn gear" id="open-settings" type="button" aria-label="設定" aria-haspopup="dialog"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
   </header>
 
-  <div class="top-grid">
-    <div class="card" id="slot-ref">
-      <div class="slot-head"><span class="chip ref">お手本</span><span class="fname" id="name-ref">—</span></div>
-      <div class="wave-wrap" id="wwrap-ref"><canvas id="wave-ref"></canvas><div class="playhead" id="ph-wave-ref"></div></div>
-      <div class="row">
-        <button class="btn solid ref-c" id="play-ref" type="button"><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg><span>全体を再生</span></button>
-        <label class="btn" for="file-ref">ファイルを選ぶ</label>
-        <input class="vh" type="file" id="file-ref" accept="audio/*,video/*,.mp3,.m4a,.mp4,.wav,.webm,.ogg,.aac,.mov">
-        <span class="meta" id="meta-ref"></span>
-      </div>
-      <div class="err" id="err-ref" hidden></div>
-      <p class="hint-s">ネイティブの音声（MP3・M4A・MP4・WAVなど、3分まで）。ドラッグ＆ドロップでも読み込めます。</p>
+  <section class="source" id="slot-ref" aria-label="お手本の音声">
+    <div class="src-name"><span class="chip">お手本</span><span class="fname" id="name-ref">—</span><span class="meta" id="meta-ref"></span></div>
+    <div class="row">
+      <button class="btn solid ref-c" id="play-ref" type="button"><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg><span>全体を再生</span></button>
+      <label class="btn" for="file-ref" title="MP3・M4A・MP4・WAV など（3分まで）。ドラッグ＆ドロップでも読み込めます。">音声を選ぶ</label>
+      <input class="vh" type="file" id="file-ref" accept="audio/*,video/*,.mp3,.m4a,.mp4,.wav,.webm,.ogg,.aac,.mov">
     </div>
-    <div class="card" id="script-card">
-      <div class="slot-head"><h3><label for="script">スクリプト</label></h3><span class="badge-sample" id="script-badge">サンプル</span></div>
-      <div class="row">
-        <button class="btn solid ref-c" id="asr-run" type="button">音声から文字起こし</button>
-        <select class="sel" id="asr-model" aria-label="文字起こしの精度">
-          <option value="Xenova/whisper-tiny.en">速い（tiny）</option>
-          <option value="Xenova/whisper-base.en" selected>標準（base）</option>
-          <option value="Xenova/whisper-small.en">高精度（small・初回の読み込みが重い）</option>
-        </select>
-      </div>
-      <div class="meter asr" aria-hidden="true"><span id="asr-bar"></span></div>
-      <p class="hint-s" id="asr-status"></p>
-      <div class="err" id="asr-host" hidden>このページは Claude（アプリまたは claude.ai）の中で開いているため、文字起こしとマイク録音は使えません（安全設定でモデルのダウンロードとマイクがブロックされます）。スマホ・パソコンとも、Safari や Chrome で <b>https://shiorisan.github.io/intonation-lens/</b> を開くとすべての機能が使えます。</div>
-      <textarea id="script" spellcheck="false">I didn't say that.
-Where are you going?
-It's a beautiful day.</textarea>
-      <p class="hint-s">文字起こしの結果が1文ずつ1行に並びます。聞き間違いはここで直せます（行の数を変えると区切り直します）。</p>
-    </div>
-  </div>
-
-  <div class="controls">
-    <div class="grp"><span>行の区切り</span>
-      <select class="sel" id="pause">
-        <option value="auto" selected>自動（スクリプトの行数に合わせる）</option>
-        <option value="0.2">短いポーズでも区切る（0.2秒）</option>
-        <option value="0.35">普通（0.35秒）</option>
-        <option value="0.6">長いポーズだけ（0.6秒）</option>
-        <option value="1">かなり長いポーズだけ（1秒）</option>
-      </select>
-    </div>
-    <div class="grp"><span>再生速度</span>
-      <div class="seg" id="speed"><button type="button" data-v="1" aria-pressed="true">1.0×</button><button type="button" data-v="0.75" aria-pressed="false">0.75×</button><button type="button" data-v="0.5" aria-pressed="false">0.5×</button></div>
-    </div>
-    <div class="grp"><span>時間の合わせ方</span>
-      <div class="seg" id="align"><button type="button" data-v="dtw" aria-pressed="true">音節で揃える</button><button type="button" data-v="linear" aria-pressed="false">長さだけ揃える</button></div>
+    <div class="asr" id="asr-box">
+      <div class="meter asr-m" aria-hidden="true"><span id="asr-bar"></span></div>
+      <p class="hint-s" id="asr-status" role="status"></p>
     </div>
     <span class="status" id="status" role="status"></span>
-  </div>
+    <div class="err" id="err-ref" hidden></div>
+    <div class="err" id="asr-host" hidden>このページは Claude（アプリまたは claude.ai）の中で開いているため、文字起こしとマイク録音は使えません（安全設定でモデルのダウンロードとマイクがブロックされます）。スマホ・パソコンとも、Safari や Chrome で <b>https://shiorisan.github.io/intonation-lens/</b> を開くとすべての機能が使えます。</div>
+  </section>
 
   <section>
     <div class="lines-head"><h2>行リスト</h2><span class="hint-s" id="lines-note"></span></div>
     <div class="lines" id="lines"></div>
   </section>
 
-  <div class="panel">
+  <div class="panel" id="practice">
     <div class="panel-head">
       <div class="nav">
         <button class="iconbtn" id="prev" type="button" aria-label="前の行"><svg viewBox="0 0 16 16"><path d="M10 3L5 8l5 5"/></svg></button>
         <div class="pos" id="pos">—</div>
         <button class="iconbtn" id="next" type="button" aria-label="次の行"><svg viewBox="0 0 16 16"><path d="M6 3l5 5-5 5"/></svg></button>
       </div>
-      <div class="grp"><span class="hint-s">練習で流すお手本</span>
-        <div class="seg" id="modelvoice"><button type="button" data-v="orig" aria-pressed="true">オリジナル</button><button type="button" data-v="conv" aria-pressed="false">あなたの声</button></div>
-        <button class="btn" id="lp-both" type="button">お手本 → あなた</button>
-      </div>
-      <div class="grp"><span class="hint-s">単語を<span class="clk">クリック</span>で</span>
-        <div class="seg" id="wordmode"><button type="button" data-v="audio" aria-pressed="true">お手本の音声</button><button type="button" data-v="tts" aria-pressed="false">読み上げ</button></div>
-      </div>
+      <span class="hint-s kbd-hint">← → で行を移動 ・ R で録音</span>
     </div>
 
-    <div class="voicebar">
-      <div class="vb-col">
-        <span class="vb-lbl">この行を聞き比べ</span>
-        <div class="row">
-          <button class="btn tone ref-c" id="lp-ref" type="button"><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg>お手本（オリジナル）</button>
-          <button class="btn tone conv-c" id="lp-conv" type="button"><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg>あなたの声のお手本</button>
-          <button class="btn tone mine-c" id="lp-mine" type="button"><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg>あなたの録音</button>
-        </div>
-        <p class="hint-s" id="key-info"></p>
-      </div>
-      <div class="vb-col">
-        <details class="tune" id="tune" open>
-        <summary class="vb-lbl">あなたの声のお手本を調整</summary>
-        <div class="tune-body">
-        <span class="vb-lbl">声の高さ（キー・半音）</span>
-        <div class="keybox">
-          <button class="keybtn" id="key-down" type="button" aria-label="キーを1つ下げる">♭</button>
-          <output class="keyval" id="key-val" aria-live="polite">0</output>
-          <button class="keybtn" id="key-up" type="button" aria-label="キーを1つ上げる">♯</button>
-          <button class="btn" id="key-auto" type="button" title="録音した声の高さに合わせる">自動</button>
-          <button class="btn" id="key-orig" type="button">原曲キー</button>
-        </div>
-        <span class="vb-lbl">声質（声の太さ・響き）</span>
-        <div class="keybox">
-          <button class="keybtn" id="fmt-down" type="button" aria-label="声を太く（響きを低く）">−</button>
-          <output class="keyval" id="fmt-val" aria-live="polite">100</output>
-          <button class="keybtn" id="fmt-up" type="button" aria-label="声を細く（響きを高く）">+</button>
-          <button class="btn" id="fmt-auto" type="button" title="録音した声質に合わせる">自動</button>
-          <button class="btn" id="fmt-orig" type="button">お手本のまま</button>
-        </div>
-        <div class="keyscale" id="key-scale" aria-hidden="true"></div>
-        <p class="hint-s" id="key-scale-note"></p>
-        </div>
-        </details>
-      </div>
-    </div>
-
-    <div class="script-view" id="script-view">
-      <span class="who ref">お手本</span><div class="wline ref" id="wl-ref"></div>
-      <span class="who mine">あなた</span><div class="wline mine" id="wl-mine"></div>
-    </div>
-
-    <div class="recorder">
-      <div class="rec-main">
-        <div class="rec-title" id="rec-title">あなたの録音</div>
-        <div class="row">
-          <button class="btn recbtn" id="rec-model" type="button"><span class="dot"></span>お手本を聞いてから録音</button>
-          <button class="btn tone rec-c" id="rec-now" type="button"><span class="dot"></span>すぐに録音</button>
-          <label class="btn" for="file-take">ファイルから</label>
-          <input class="vh" type="file" id="file-take" accept="audio/*,video/*,.mp3,.m4a,.mp4,.wav,.webm,.ogg,.aac,.mov">
-        </div>
-        <div class="meter" aria-hidden="true"><span id="lvl"></span></div>
-        <div class="rec-status" id="rec-status" role="status">お手本を聞いたあと、同じように読んでください。話し終えて1秒ほど黙ると自動で止まります<span class="kbd-hint">（Rキーでも開始・停止）</span>。</div>
-        <div class="err" id="mic-err" hidden></div>
-      </div>
-      <div class="rec-main">
-        <div class="wave-wrap sm" id="wwrap-mine"><canvas id="wave-mine"></canvas><div class="playhead" id="ph-wave-mine"></div></div>
-        <div class="hist" id="hist">この行はまだ録音していません。</div>
-      </div>
-    </div>
-
-    <div class="subbar">
-      <div class="grp"><span>表示</span>
-        <div class="seg" id="view"><button type="button" data-v="line" aria-pressed="true">1行ずつ</button><button type="button" data-v="all" aria-pressed="false">全体を横スクロール</button></div>
-      </div>
-      <div class="grp"><span>横の拡大</span>
-        <div class="seg" id="zoom"><button type="button" data-v="fit" aria-pressed="true">画面幅</button><button type="button" data-v="150" aria-pressed="false">小</button><button type="button" data-v="300" aria-pressed="false">中</button><button type="button" data-v="500" aria-pressed="false">大</button></div>
-      </div>
-      <div class="legend">
-        <label><input type="checkbox" id="show-ref" checked><span class="sw" style="background:var(--ref)"></span>お手本</label>
-        <label><input type="checkbox" id="show-mine" checked><span class="sw" style="background:var(--mine)"></span>あなた</label>
-        <span>線の太さ＝声の強さ</span>
-      </div>
-    </div>
-    <div class="chart" id="chart">
-      <canvas id="c-axis"></canvas>
+    <div class="prosody" id="chart">
       <div class="scroller" id="scroller">
         <div class="inner" id="inner">
-          <canvas id="c-pitch"></canvas>
-          <div class="wrow" id="wrow"></div>
-          <canvas id="c-stress"></canvas>
-          <canvas id="c-int"></canvas>
+          <div class="lane ref">
+            <div class="lane-head"><span class="who">お手本</span><span class="tone" id="tone-ref"></span></div>
+            <canvas id="c-ref"></canvas>
+            <div class="wrow ref" id="wrow-ref"></div>
+          </div>
+          <div class="lane mine">
+            <div class="lane-head"><span class="who">あなた</span><span class="tone" id="tone-mine"></span></div>
+            <canvas id="c-mine"></canvas>
+            <div class="wrow mine" id="wrow-mine"></div>
+          </div>
           <div class="playhead" id="ph-chart"></div>
         </div>
       </div>
+      <div class="pv-key">
+        <span><i class="k-line"></i>声の上がり下がり（イントネーション）</span>
+        <span><i class="k-dot"></i>音節（大きい●・大きい文字＝強勢）</span>
+        <span><i class="k-dash"></i>お手本の形（あなたの段）</span>
+        <span>単語を<span class="clk">クリック</span>で発音</span>
+      </div>
     </div>
-    <div class="axis-note">
-      <span>上段：声の高さ（半音。0＝その人の平均の高さ）</span>
-      <span>単語：お手本の単語の位置（推定）。<span class="clk">クリック</span>で発音</span>
-      <span>中段：音節の山（●強勢／○弱い音節）</span>
-      <span>下段：声の強さ（dB）</span>
-      <span class="kbd-hint">← → で行を移動</span>
+
+    <div class="listen">
+      <span class="lbl">聞き比べ</span>
+      <button class="btn tone ref-c" id="lp-ref" type="button"><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg>お手本</button>
+      <button class="btn tone conv-c" id="lp-conv" type="button"><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg>あなたの声のお手本</button>
+      <button class="btn tone mine-c" id="lp-mine" type="button"><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg>あなたの録音</button>
+      <button class="btn" id="lp-both" type="button">お手本 → あなた</button>
+    </div>
+
+    <div class="recorder">
+      <div class="rec-title" id="rec-title">あなたの録音</div>
+      <div class="row">
+        <button class="btn recbtn" id="rec-model" type="button"><span class="dot"></span>お手本を聞いてから録音</button>
+        <button class="btn tone rec-c" id="rec-now" type="button"><span class="dot"></span>すぐに録音</button>
+        <label class="btn" for="file-take">ファイルから</label>
+        <input class="vh" type="file" id="file-take" accept="audio/*,video/*,.mp3,.m4a,.mp4,.wav,.webm,.ogg,.aac,.mov">
+      </div>
+      <div class="meter" aria-hidden="true"><span id="lvl"></span></div>
+      <div class="rec-status" id="rec-status" role="status">お手本を聞いたあと、同じように読んでください。話し終えて1秒ほど黙ると自動で止まります。</div>
+      <div class="err" id="mic-err" hidden></div>
+      <div class="hist" id="hist">この行はまだ録音していません。</div>
     </div>
   </div>
 
   <div class="metrics" id="metrics"></div>
-
-  <div class="panel">
-    <div class="panel-head"><h2>この行の練習ポイント</h2><span class="status" id="fb-note"></span></div>
-    <ul class="feedback" id="feedback"></ul>
-  </div>
-
-  <div class="guide">
-    <section>
-      <h3>文字の大きさ＝強勢</h3>
-      <p>スクリプトの単語は、強く発音されている音節ほど大きく太く表示されます。お手本とあなたの行を上下で見比べて、大きい文字の位置が同じかを確認しましょう。</p>
-      <p class="ex">I didn't <b>SAY</b> that. ／ It's a <b>BEAU</b>tiful <b>DAY</b>.</p>
-    </section>
-    <section>
-      <h3>弱い音節はしっかり弱く</h3>
-      <p>a, the, to, and, of などの機能語は短く弱く発音されます。日本語は各音節をほぼ同じ強さで読むため、文字の大きさがそろいやすく、母音を足すと山の数も増えます（did → ディド）。</p>
-    </section>
-    <section>
-      <h3>文末の上げ下げ</h3>
-      <ul>
-        <li>平叙文・Wh疑問文：最後の強勢から下がる</li>
-        <li>Yes/No疑問文：最後に上がる</li>
-        <li>日本語話者は高さの幅が狭くなりがち。上段カーブの高低差をお手本に近づけましょう。</li>
-      </ul>
-    </section>
-    <section>
-      <h3>練習の流れ</h3>
-      <ol>
-        <li>お手本の音声を読み込む（自動で文字起こしされ、1文ずつの行に分かれます）</li>
-        <li>行を選び、大きい文字の単語をクリックして発音を確認</li>
-        <li>「お手本を聞いてから録音」で、すぐにまねして読む</li>
-        <li>文字の大きさと数値を見比べ、同じ行を何回か録り直す（一致度の記録が残ります）</li>
-      </ol>
-    </section>
-  </div>
 </div>
+
+<dialog class="sheet" id="settings" aria-labelledby="set-title">
+  <form method="dialog" class="sheet-in">
+    <div class="sheet-head"><h2 id="set-title">設定</h2><button class="iconbtn" type="submit" aria-label="閉じる"><svg viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div>
+    <div class="set-sec">再生</div>
+    <div class="set-grp"><span class="lbl">再生速度</span>
+      <div class="seg" id="speed"><button type="button" data-v="1" aria-pressed="true">1.0×</button><button type="button" data-v="0.75" aria-pressed="false">0.75×</button><button type="button" data-v="0.5" aria-pressed="false">0.5×</button></div>
+    </div>
+    <div class="set-grp"><span class="lbl">練習で流すお手本</span>
+      <div class="seg" id="modelvoice"><button type="button" data-v="orig" aria-pressed="true">オリジナル</button><button type="button" data-v="conv" aria-pressed="false">あなたの声のお手本</button></div>
+    </div>
+    <div class="set-grp"><span class="lbl">単語を<span class="clk">クリック</span>したとき</span>
+      <div class="seg" id="wordmode"><button type="button" data-v="audio" aria-pressed="true">お手本の音声</button><button type="button" data-v="tts" aria-pressed="false">読み上げ</button></div>
+    </div>
+    <div class="set-sec">グラフ</div>
+    <div class="set-grp"><span class="lbl">表示範囲</span>
+      <div class="seg" id="view"><button type="button" data-v="line" aria-pressed="true">1行ずつ</button><button type="button" data-v="all" aria-pressed="false">全体を横スクロール</button></div>
+    </div>
+    <div class="set-grp"><span class="lbl">横の拡大</span>
+      <div class="seg" id="zoom"><button type="button" data-v="fit" aria-pressed="true">画面幅</button><button type="button" data-v="150" aria-pressed="false">小</button><button type="button" data-v="300" aria-pressed="false">中</button><button type="button" data-v="500" aria-pressed="false">大</button></div>
+    </div>
+    <div class="set-sec">解析</div>
+    <div class="set-grp"><label class="lbl" for="pause">行の区切り</label>
+      <select class="sel" id="pause">
+        <option value="auto" selected>自動（文字起こしの文に合わせる）</option>
+        <option value="0.2">短いポーズでも区切る（0.2秒）</option>
+        <option value="0.35">普通（0.35秒）</option>
+        <option value="0.6">長いポーズだけ（0.6秒）</option>
+        <option value="1">かなり長いポーズだけ（1秒）</option>
+      </select>
+    </div>
+    <div class="set-grp"><span class="lbl">時間の合わせ方</span>
+      <div class="seg" id="align"><button type="button" data-v="dtw" aria-pressed="true">音節で揃える</button><button type="button" data-v="linear" aria-pressed="false">長さだけ揃える</button></div>
+    </div>
+    <div class="set-grp"><label class="lbl" for="asr-model">文字起こしの精度</label>
+      <select class="sel" id="asr-model">
+        <option value="Xenova/whisper-tiny.en">速い（tiny）</option>
+        <option value="Xenova/whisper-base.en" selected>標準（base）</option>
+        <option value="Xenova/whisper-small.en">高精度（small・初回の読み込みが重い）</option>
+      </select>
+      <div class="row"><button class="btn" id="asr-run" type="button">この精度で文字起こしし直す</button></div>
+    </div>
+    <p class="privacy">音声はこのブラウザ内だけで解析され、外部には送信されません。</p>
+  </form>
+</dialog>
 
 <nav class="mbar" id="mbar" aria-label="練習の操作">
   <button class="iconbtn" id="mb-prev" type="button" aria-label="前の行"><svg viewBox="0 0 16 16"><path d="M10 3L5 8l5 5"/></svg></button>
@@ -495,7 +385,7 @@ const SR = 16000, HOP = 160, WIN = 640, FPS = SR / HOP, MAX_SEC = 180;
 const $ = (id) => document.getElementById(id);
 const audios = { ref: new Audio(), mine: new Audio(), conv: new Audio() };
 const PLAYERS = ["ref", "mine", "conv"];
-const S = { sel: 0, view: "line", zoom: "fit", align: "dtw", pause: "auto", speed: 1, wordmode: "audio", modelVoice: "orig", key: null, formant: null, show: { ref: true, mine: true } };
+const S = { sel: 0, view: "line", zoom: "fit", align: "dtw", pause: "auto", speed: 1, wordmode: "audio", modelVoice: "orig", key: null, formant: null };
 let REF = null;
 let takes = {};
 const pairCache = new Map(), wordCache = new Map();
@@ -521,7 +411,8 @@ function cssVar(n) { return getComputedStyle(document.documentElement).getProper
 function fmt(t, d = 1) { const m = Math.floor(t / 60), s = t - m * 60; return m + ":" + (s < 10 ? "0" : "") + s.toFixed(d); }
 function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-function scriptLines() { return $("script").value.split(/\r?\n/).map(s => s.trim()).filter(Boolean); }
+let SCRIPT = "I didn't say that.\nWhere are you going?\nIt's a beautiful day."; // one sentence per line, filled by transcription
+function scriptLines() { return SCRIPT.split(/\r?\n/).map(s => s.trim()).filter(Boolean); }
 function setStatus(t) { $("status").textContent = t; }
 const TOUCH = matchMedia("(hover: none)").matches, CLICK = TOUCH ? "タップ" : "クリック";
 if (TOUCH) document.querySelectorAll(".clk").forEach(e => { e.textContent = CLICK; });
@@ -984,11 +875,11 @@ function renderLines() {
     if (p && !isNaN(p.cmp.corr)) { const v = Math.round(p.cmp.corr * 100); pill = `<span class="pill ${v >= 65 ? "good" : "warn"}">一致 ${v}%</span>`; }
     return `<button type="button" class="line-card" data-i="${i}" aria-current="${i === S.sel}">
       <span class="row1"><span class="no">${i + 1}</span>${pill}<span class="tm">${fmt(s.a / FPS)}</span></span>
-      <span class="tx${tx ? "" : " empty"}">${tx ? esc(tx) : "（スクリプト未入力）"}</span></button>`;
+      <span class="tx${tx ? "" : " empty"}">${tx ? esc(tx) : "（文字起こし待ち）"}</span></button>`;
   }).join("");
   const done = Object.keys(takes).filter(k => +k < n).length;
   let note = `${n}行 ・ 録音済み ${done}行`;
-  if (lines.length && lines.length !== n) note += ` ・ スクリプトは${lines.length}行です。区切りがずれる場合は「行の区切り」を変えてください`;
+  if (lines.length && lines.length !== n) note += ` ・ 文は${lines.length}つです。区切りがずれる場合は設定の「行の区切り」を変えてください`;
   $("lines-note").textContent = note;
   scrollCardIntoView();
 }
@@ -1010,7 +901,7 @@ function select(i, opts = {}) {
   if (S.view === "line") { if (changed && !opts.keepScroll) $("scroller").scrollLeft = 0; }
   else if (!opts.keepScroll) scrollToLine();
 }
-function renderLineDetail() { renderHeader(); renderScript(); renderRecorder(); renderMetrics(); renderFeedback(); drawCharts(); drawWaveRef(); drawWaveMine(); }
+function renderLineDetail() { renderHeader(); renderRecorder(); renderMetrics(); drawCharts(); }
 function scrollToLine() { if (!REF || !geo) return; $("scroller").scrollLeft = Math.max(0, geo.X(REF.segs[S.sel].a / FPS) - 24); }
 function renderHeader() {
   const n = lineCount();
@@ -1018,7 +909,6 @@ function renderHeader() {
   $("prev").disabled = !n || S.sel <= 0; $("next").disabled = !n || S.sel >= n - 1;
   const has = !!takes[S.sel];
   $("lp-mine").disabled = !has; $("lp-both").disabled = !has; $("lp-ref").disabled = !n; $("lp-conv").disabled = !n;
-  renderVoice();
   syncBar();
 }
 function syncBar() {
@@ -1038,28 +928,17 @@ document.addEventListener("focusout", () => document.body.classList.remove("typi
 $("prev").addEventListener("click", () => select(S.sel - 1));
 $("next").addEventListener("click", () => select(S.sel + 1));
 document.addEventListener("keydown", (e) => {
-  if (e.target.closest && e.target.closest("input,textarea,select")) return;
+  if ((e.target.closest && e.target.closest("input,textarea,select")) || $("settings").open) return;
   if (e.key === "ArrowLeft") { e.preventDefault(); select(S.sel - 1); }
   else if (e.key === "ArrowRight") { e.preventDefault(); select(S.sel + 1); }
   else if (e.key === "r" || e.key === "R") { e.preventDefault(); rec.state === "recording" ? stopRec() : startRec(true); }
 });
 
-/* ---------- script display (words sized by stress) ---------- */
+/* ---------- words sized by stress ---------- */
 function sylHTML(s, big) {
   const size = big ? 17 + 27 * s.norm : 11 + 13 * s.norm;
   const w = s.strong ? 800 : Math.round((400 + 200 * s.norm) / 100) * 100;
   return `<span class="syl ${s.strong ? "s" : "w"}" style="font-size:calc(${size.toFixed(1)}px * var(--wscale));font-weight:${w}">${esc(s.t)}</span>`;
-}
-function renderScript() {
-  const words = wordTiming(S.sel), refBox = $("wl-ref"), mineBox = $("wl-mine");
-  if (!words) {
-    refBox.innerHTML = `<span class="empty">${lineCount() ? "この行のスクリプトを入力すると、単語ごとの強勢が表示されます。" : "お手本の音声を読み込んでください。"}</span>`;
-    mineBox.innerHTML = ""; return;
-  }
-  refBox.innerHTML = words.map((w, k) => `<button type="button" class="word" data-w="${k}" data-who="ref" title="${esc(w.clean)}：クリックで発音を聞く">${w.syl.map(s => sylHTML(s, true)).join("")}</button>`).join("");
-  const mw = mineWordStrengths(S.sel, words);
-  if (!mw) { mineBox.innerHTML = `<span class="empty">録音すると、あなたの強勢が同じ形で表示されます。</span>`; return; }
-  mineBox.innerHTML = mw.map((w, k) => `<button type="button" class="word" data-w="${k}" data-who="mine" title="${esc(words[k].clean)}：クリックであなたの発音を聞く">${w.syl.map(s => sylHTML(s, true)).join("")}</button>`).join("");
 }
 function onWordClick(e) {
   const b = e.target.closest("[data-w]"); if (!b) return;
@@ -1068,9 +947,8 @@ function onWordClick(e) {
   if (line !== S.sel) select(line, { keepScroll: true });
   playWord(line, k, b.dataset.who);
 }
-$("wl-ref").addEventListener("click", onWordClick);
-$("wl-mine").addEventListener("click", onWordClick);
-$("wrow").addEventListener("click", onWordClick);
+$("wrow-ref").addEventListener("click", onWordClick);
+$("wrow-mine").addEventListener("click", onWordClick);
 function playWord(i, k, who) {
   const words = wordTiming(i); if (!words || !words[k]) return;
   const w = words[k];
@@ -1090,7 +968,7 @@ function playWord(i, k, who) {
   playModelRange(Math.max(0, w.a / FPS - 0.04), w.b / FPS + 0.05, null, i);
 }
 
-/* ---------- metrics + feedback ---------- */
+/* ---------- metrics ---------- */
 function barRow(label, v, max, color, unit, dec = 1) {
   const w = isNaN(v) ? 0 : Math.max(2, Math.min(100, v / max * 100));
   return `<div class="bar"><span>${label}</span><span class="track"><span class="fill" style="width:${w}%;background:${color}"></span></span><span class="v">${isNaN(v) ? "—" : v.toFixed(dec) + unit}</span></div>`;
@@ -1127,216 +1005,167 @@ function renderMetrics() {
       <p class="hint">お手本の強い音節と同じ位置で強く言えているか。</p></div>`
   ].join("");
 }
-function renderFeedback() {
-  const n = lineCount(), items = [];
-  const p = n ? getPair(S.sel) : null;
-  if (!p) {
-    $("fb-note").textContent = n ? `行 ${S.sel + 1}` : "";
-    $("feedback").innerHTML = `<li><span class="pill none">待機中</span><span>${n ? "この行を録音すると、お手本と比べたアドバイスが表示されます。" : "お手本の音声を読み込んでください。"}</span></li>`;
-    return;
-  }
-  const R = p.rst, M = p.mst, cmp = p.cmp;
-  const ok = (t) => items.push(["good", "OK", t]), ng = (t) => items.push(["warn", "練習", t]);
-  const words = wordTiming(S.sel), mw = words ? mineWordStrengths(S.sel, words) : null;
-  if (words && mw) {
-    const refStrong = words.map((w, k) => ({ w, k })).filter(x => x.w.strong);
-    const missed = refStrong.filter(x => mw[x.k].syl.every(s => !s.strong) && Math.max(...mw[x.k].syl.map(s => s.norm)) < 0.6);
-    const extra = words.map((w, k) => ({ w, k })).filter(x => !x.w.strong && x.w.norm < 0.4 && mw[x.k].syl.some(s => s.strong));
-    if (missed.length) ng(`お手本で強く言っている <b>${missed.map(x => esc(x.w.clean)).join(", ")}</b> が、あなたの録音では弱めです。この単語を${CLICK}して聞き、大きく・長く・高く言ってみましょう。`);
-    if (extra.length) ng(`<b>${extra.map(x => esc(x.w.clean)).join(", ")}</b> はお手本では弱く短い単語ですが、強く発音されています。軽く添えるように。`);
-    if (refStrong.length && !missed.length) ok(`強く言うべき単語（${refStrong.map(x => esc(x.w.clean)).join(", ")}）はしっかり強調できています。`);
-  }
-  const tkx = takes[S.sel];
-  if (tkx && tkx.missing) {
-    if (tkx.missing.length) ng(`文字起こしでは <b>${tkx.missing.map(esc).join(", ")}</b> がスクリプトどおりに聞き取られませんでした。その単語を${CLICK}してお手本の発音と聞き比べてみましょう。`);
-    else ok(`文字起こしで、すべての単語がスクリプトどおりに聞き取られました。`);
-  }
-  if (!isNaN(R.range) && !isNaN(M.range) && R.range > 0) {
-    const rr = M.range / R.range;
-    if (rr < 0.75) ng(`抑揚の幅がお手本の約${Math.round(rr * 100)}%です。強調する単語で声を一段高く上げ、文末ははっきり下げてみましょう。`);
-    else if (rr > 1.35) ng(`抑揚の幅がお手本より大きめです（約${Math.round(rr * 100)}%）。大げさになりすぎていないか聞き比べてみましょう。`);
-    else ok(`抑揚の幅はお手本に近いです（約${Math.round(rr * 100)}%）。`);
-  }
-  if (R.contrast > 0 && !isNaN(M.contrast)) {
-    if (M.contrast / R.contrast < 0.7) ng(`強い音節と弱い音節の差が小さく、全体が同じ強さに聞こえやすい状態です。上の文字の大きさの差をお手本に近づけましょう。`);
-    else ok(`強弱の差はお手本と同程度出ています。`);
-  }
-  if (!isNaN(cmp.corr)) {
-    if (cmp.corr < 0.5) ng(`高さの上がり下がりの形がお手本と違います。上段のカーブで、お手本の山がどの単語の上にあるかを確認しましょう。`);
-    else if (cmp.corr < 0.65) ng(`カーブの形はおおむね近いですが、山の位置や高さに差があります。`);
-    else ok(`カーブの形はお手本とよく似ています。`);
-  }
-  const extraN = M.nuclei.length - R.nuclei.length;
-  if (extraN >= 2) ng(`音節の山がお手本より ${extraN} 個多く検出されました。子音の後ろに母音を足している（did → ディド、that → ザット）可能性があります。`);
-  if (R.finalMove < -1.5 && M.finalMove > -1) ng(`お手本は文末で下がっていますが、あなたの文末はあまり下がっていません。最後の強勢のあとは下げきるイメージで。`);
-  else if (R.finalMove > 1.5 && M.finalMove < 1) ng(`お手本は文末で上がっています（疑問文など）。最後を上げてみましょう。`);
-  if (R.speechDur > 0) { const tr = M.speechDur / R.speechDur; if (tr > 1.35) ng(`お手本より約${tr.toFixed(1)}倍ゆっくりです。弱い音節を短くすると自然に近づきます。`); }
-  items.sort((a, b) => (a[0] === "warn" ? 0 : 1) - (b[0] === "warn" ? 0 : 1));
-  $("fb-note").textContent = `行 ${S.sel + 1} ・ ${items.filter(i => i[0] === "warn").length} 件の練習ポイント`;
-  $("feedback").innerHTML = items.map(([s, l, t]) => `<li><span class="pill ${s}">${l}</span><span>${t}</span></li>`).join("");
-}
-
-/* ---------- drawing ---------- */
-const H_P = 236, H_W = 46, H_S = 58, H_I = 112, PADX = 10;
-function setupCanvas(cv, w, h, fluid) {
+/* ---------- prosody view: per speaker, a smooth intonation contour drawn directly over stress-sized words ---------- */
+// Modelled on the interlinear tonetic stave used to teach English intonation: the pitch line runs above the text,
+// every syllable is a dot on that line (big = stressed), and the final (nuclear) tone is named per lane.
+const PADX = 14, BRIDGE = 30; // unvoiced gaps up to 0.3 s are bridged so a phrase reads as one connected curve
+function setupCanvas(cv, w, h) {
   let dpr = window.devicePixelRatio || 1;
   dpr = Math.min(dpr, 32000 / Math.max(1, w));
-  cv.style.width = fluid ? "100%" : w + "px"; cv.style.height = h + "px";
+  cv.style.width = w + "px"; cv.style.height = h + "px";
   cv.width = Math.max(1, Math.round(w * dpr)); cv.height = Math.round(h * dpr);
   const ctx = cv.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, w, h);
   return ctx;
 }
-const pTop = 20, pBot = 212, stMax = 12;
-const Yp = (s) => pTop + (stMax - Math.max(-stMax, Math.min(stMax, s))) / (2 * stMax) * (pBot - pTop);
-const iTop = 6, iBot = 104, dbMin = -40;
-const Yi = (v) => iTop + (0 - Math.max(dbMin, Math.min(0, v))) / (-dbMin) * (iBot - iTop);
-function rowsY() { const both = S.show.ref && S.show.mine; return { ref: both ? 17 : 29, mine: both ? 43 : 29 }; }
-function drawAxis() {
-  const ctx = setupCanvas($("c-axis"), 44, H_P + 1 + H_W + 1 + H_S + H_I);
-  ctx.font = "11px " + cssVar("--mono"); ctx.textBaseline = "middle"; ctx.fillStyle = cssVar("--ink-3");
-  ctx.textAlign = "left"; ctx.fillText("半音", 2, 7); ctx.textAlign = "right";
-  for (const s of [-12, -6, 0, 6, 12]) ctx.fillText((s > 0 ? "+" : "") + s, 38, Yp(s));
-  ctx.fillText("単語", 38, H_P + 1 + H_W / 2);
-  const base = H_P + H_W + 2, ry = rowsY();
-  if (S.show.ref) { ctx.fillStyle = cssVar("--ref"); ctx.fillText("手本", 38, base + ry.ref); }
-  if (S.show.mine) { ctx.fillStyle = cssVar("--mine"); ctx.fillText("自分", 38, base + ry.mine); }
-  ctx.fillStyle = cssVar("--ink-3");
-  for (const v of [0, -20, -40]) ctx.fillText(v + "dB", 40, base + H_S + Yi(v));
+function contour(vals) {
+  const n = vals.length, v = Float32Array.from(vals), out = new Float32Array(n).fill(NaN);
+  let last = -1;
+  for (let k = 0; k < n; k++) {
+    if (isNaN(v[k])) continue;
+    if (last >= 0 && k - last > 1 && k - last <= BRIDGE) {
+      for (let q = last + 1; q < k; q++) { const t = (q - last) / (k - last); v[q] = v[last] + (v[k] - v[last]) * t * t * (3 - 2 * t); }
+    }
+    last = k;
+  }
+  for (let k = 0; k < n;) {
+    if (isNaN(v[k])) { k++; continue; }
+    let e = k; while (e < n && !isNaN(v[e])) e++;
+    if (e - k >= 3) out.set(movingAvg(movingAvg(v.subarray(k, e), 9), 9), k);
+    k = e;
+  }
+  return out;
+}
+function strokeContour(ctx, c, base, X, Y, step) {
+  for (let k = 0; k < c.length;) {
+    if (isNaN(c[k])) { k++; continue; }
+    let e = k; while (e < c.length && !isNaN(c[e])) e++;
+    const pts = [];
+    for (let q = k; q < e; q += step) pts.push([X((base + q) / FPS), Y(c[q])]);
+    if ((e - 1 - k) % step) pts.push([X((base + e - 1) / FPS), Y(c[e - 1])]);
+    if (pts.length > 1) {
+      ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
+      for (let i = 1; i < pts.length - 1; i++) ctx.quadraticCurveTo(pts[i][0], pts[i][1], (pts[i][0] + pts[i + 1][0]) / 2, (pts[i][1] + pts[i + 1][1]) / 2);
+      ctx.lineTo(pts[pts.length - 1][0], pts[pts.length - 1][1]); ctx.stroke();
+    }
+    k = e;
+  }
+}
+function valueNear(c, k) { for (let d = 0; d <= 12; d++) { if (!isNaN(c[k - d])) return c[k - d]; if (!isNaN(c[k + d])) return c[k + d]; } return NaN; }
+function toneOf(st) { const m = st.finalMove; return m < -1.5 ? "文末 ↘ 下降調" : m > 1.5 ? "文末 ↗ 上昇調" : "文末 → 平ら"; }
+function wordItems(i, who) {
+  const words = wordTiming(i); if (!words) return [];
+  const mw = who === "mine" ? mineWordStrengths(i, words) : null;
+  if (who === "mine" && !mw) return [];
+  return words.map((w, k) => {
+    const syl = who === "mine" ? mw[k].syl.map((s, q) => Object.assign({}, s, { a: w.syl[q].a, b: w.syl[q].b })) : w.syl;
+    const tip = who === "mine" ? "：あなたの発音を聞く" : "：発音を聞く";
+    return { i, a: w.a, b: w.b, syl, html: `<button type="button" class="wbtn" data-line="${i}" data-w="${k}" data-who="${who}" title="${esc(w.clean)}${tip}">${syl.map(s => sylHTML(s, true)).join("")}</button>` };
+  });
 }
 function drawCharts() {
-  drawAxis();
-  const scroller = $("scroller"), clientW = Math.max(200, scroller.clientWidth);
-  const grid = cssVar("--grid"), ink3 = cssVar("--ink-3"), ink2 = cssVar("--ink-2"), band = cssVar("--band"), ink = cssVar("--ink");
-  const cRef = cssVar("--ref"), cMine = cssVar("--mine"), cRefSoft = cssVar("--ref-soft"), surface = cssVar("--surface");
-  const mono = "11px " + cssVar("--mono");
+  const scroller = $("scroller"), clientW = Math.max(200, scroller.clientWidth), CH = innerWidth <= 640 ? 96 : 124;
+  const rowR = $("wrow-ref"), rowM = $("wrow-mine"), cvR = $("c-ref"), cvM = $("c-mine");
+  const cRef = cssVar("--ref"), cMine = cssVar("--mine"), cRefSoft = cssVar("--ref-soft"), cMineSoft = cssVar("--mine-soft"), surface = cssVar("--surface"), band = cssVar("--band");
   if (!REF) {
-    const P = setupCanvas($("c-pitch"), clientW, H_P); setupCanvas($("c-stress"), clientW, H_S); setupCanvas($("c-int"), clientW, H_I);
-    P.fillStyle = ink2; P.textAlign = "center"; P.font = "14px " + cssVar("--body"); P.fillText("お手本の音声を読み込むとここに表示されます", clientW / 2, 120);
-    $("wrow").innerHTML = ""; geo = null; return;
+    $("inner").style.width = clientW + "px";
+    setupCanvas(cvR, clientW, CH); setupCanvas(cvM, clientW, CH);
+    rowR.innerHTML = `<span class="lane-empty">お手本の音声を読み込むと、ここにイントネーションと強勢が表示されます。</span>`; rowM.innerHTML = "";
+    $("tone-ref").textContent = $("tone-mine").textContent = ""; geo = null; return;
   }
   const segs = REF.segs, an = REF.an;
   let t0, t1;
   if (S.view === "line") { const sg = segs[S.sel]; t0 = sg.a / FPS; t1 = Math.max(sg.b / FPS, t0 + 0.3); }
   else { t0 = 0; t1 = an.dur; }
-  let pxs = S.zoom === "fit" ? null : +S.zoom;
+  const vis = S.view === "line" ? [S.sel] : segs.map((_, i) => i);
+
+  // words first: their rendered widths decide how wide the timeline must be so labels never collide
+  const itemsR = [], itemsM = [];
+  for (const i of vis) { itemsR.push(...wordItems(i, "ref")); itemsM.push(...wordItems(i, "mine")); }
+  const hasTake = vis.some(i => takes[i]);
+  rowR.innerHTML = itemsR.map(x => x.html).join("") || `<span class="lane-empty">${ASR.busy ? "文字起こし中です。終わると単語が表示されます。" : "この行の文字起こしがないため、単語は表示できません。"}</span>`;
+  rowM.innerHTML = itemsM.map(x => x.html).join("") || `<span class="lane-empty">${hasTake ? "" : "録音すると、点線のお手本に重ねてあなたのイントネーションが表示されます。"}</span>`;
+  const btnR = [...rowR.querySelectorAll(".wbtn")], btnM = [...rowM.querySelectorAll(".wbtn")];
+  btnR.forEach((b, k) => { itemsR[k].w = b.offsetWidth; }); btnM.forEach((b, k) => { itemsM[k].w = b.offsetWidth; });
+  let pxs = S.zoom === "fit" ? 0 : +S.zoom;
   if (S.view === "all" && !pxs) pxs = 150;
-  let W = pxs ? Math.max(clientW, (t1 - t0) * pxs + 2 * PADX) : clientW;
-  W = Math.min(Math.round(W), 30000);
+  for (const i of vis) {
+    const d = Math.max(0.3, (segs[i].b - segs[i].a) / FPS);
+    for (const items of [itemsR, itemsM]) pxs = Math.max(pxs, items.filter(x => x.i === i).reduce((s, x) => s + x.w + 4, 0) * 1.08 / d);
+  }
+  const W = Math.min(30000, Math.round(Math.max(clientW, (t1 - t0) * pxs + 2 * PADX)));
   const X = (t) => PADX + (t - t0) / (t1 - t0) * (W - 2 * PADX);
   geo = { t0, t1, W, X };
   $("inner").style.width = W + "px";
-  const P = setupCanvas($("c-pitch"), W, H_P), Sx = setupCanvas($("c-stress"), W, H_S), I = setupCanvas($("c-int"), W, H_I);
-  const vis = S.view === "line" ? [S.sel] : segs.map((_, i) => i);
-  const lines = scriptLines();
+  const place = (items, btns) => {
+    const L = items.map(x => X((x.a + x.b) / 2 / FPS) - x.w / 2);
+    for (let k = 0; k < L.length; k++) L[k] = Math.max(L[k], k ? L[k - 1] + items[k - 1].w + 4 : 2);
+    for (let k = L.length - 1; k >= 0; k--) L[k] = Math.min(L[k], k < L.length - 1 ? L[k + 1] - items[k].w - 4 : W - items[k].w - 2);
+    let prev = 0;
+    btns.forEach((b, k) => { b.style.marginLeft = (L[k] - prev).toFixed(1) + "px"; prev = L[k] + items[k].w; });
+  };
+  place(itemsR, btnR); place(itemsM, btnM);
 
-  if (S.view === "all") segs.forEach((sg, i) => {
-    const x0 = X(sg.a / FPS), x1 = X(sg.b / FPS);
-    for (const [ctx, h] of [[P, H_P], [Sx, H_S], [I, H_I]]) { ctx.fillStyle = band; ctx.fillRect(x0, 0, x1 - x0, h); }
-    if (i === S.sel) { P.strokeStyle = ink; P.lineWidth = 1.5; P.strokeRect(x0 + .75, .75, x1 - x0 - 1.5, H_P - 1.5); }
-    P.save(); P.beginPath(); P.rect(x0, 0, x1 - x0, 18); P.clip();
-    P.fillStyle = i === S.sel ? ink : ink2; P.font = "600 12px " + cssVar("--body"); P.textAlign = "left"; P.textBaseline = "top";
-    P.fillText(`${i + 1}  ${lines[i] || ""}`, x0 + 6, 3); P.restore();
-  });
-  P.lineWidth = 1;
-  for (const s of [-12, -6, 0, 6, 12]) { P.strokeStyle = grid; P.setLineDash(s === 0 ? [4, 4] : []); P.beginPath(); P.moveTo(0, Yp(s) + .5); P.lineTo(W, Yp(s) + .5); P.stroke(); }
-  P.setLineDash([]);
-  const pxPerSec = (W - 2 * PADX) / (t1 - t0);
-  const stepT = pxPerSec > 250 ? 0.25 : pxPerSec > 120 ? 0.5 : pxPerSec > 50 ? 1 : pxPerSec > 20 ? 2 : 5;
-  P.font = mono; P.textAlign = "center"; P.textBaseline = "alphabetic";
-  for (let t = Math.ceil(t0 / stepT) * stepT; t <= t1 + 1e-6; t += stepT) {
-    P.strokeStyle = grid; P.beginPath(); P.moveTo(X(t) + .5, pTop); P.lineTo(X(t) + .5, pBot); P.stroke();
-    P.fillStyle = ink3; P.fillText(fmt(t, stepT < 0.5 ? 2 : 1), Math.max(28, Math.min(W - 28, X(t))), H_P - 6);
-  }
-  // word boundaries on the pitch chart + clickable word row
-  const wrow = [];
+  // contours (semitones re. each speaker's own median), on a shared vertical scale
+  const j0 = Math.max(0, Math.floor(t0 * FPS)), j1 = Math.min(an.N - 1, Math.ceil(t1 * FPS));
+  const cR = contour(an.st.subarray(j0, j1 + 1));
+  const mine = [];
   for (const i of vis) {
-    const words = wordTiming(i); if (!words) continue;
-    P.strokeStyle = cRefSoft; P.lineWidth = 1;
-    words.forEach((w, k) => {
-      const x0 = X(w.a / FPS), x1 = X(w.b / FPS);
-      if (k) { P.beginPath(); P.moveTo(x0 + .5, pTop); P.lineTo(x0 + .5, pBot); P.stroke(); }
-      wrow.push(`<button type="button" class="wbtn" data-line="${i}" data-w="${k}" data-who="ref" style="left:${x0.toFixed(1)}px;width:${Math.max(4, x1 - x0).toFixed(1)}px" title="${esc(w.clean)}：クリックで発音を聞く">${w.syl.map(s => sylHTML(s, false)).join("")}</button>`);
-    });
-  }
-  $("wrow").innerHTML = wrow.join("");
-  nowKey = "";
-  const wfac = (a, f) => 1.2 + 6 * Math.max(0, Math.min(1, (a.env[f] - (a.maxEnv - 30)) / 30));
-  P.lineCap = "round";
-  const j0 = Math.max(0, Math.floor(t0 * FPS)), j1 = Math.min(an.N - 2, Math.ceil(t1 * FPS));
-  if (S.show.ref) {
-    P.strokeStyle = cRef;
-    for (let j = j0; j < j1; j++) {
-      const v1 = an.st[j], v2 = an.st[j + 1]; if (isNaN(v1) || isNaN(v2)) continue;
-      P.lineWidth = wfac(an, j); P.beginPath(); P.moveTo(X(j / FPS), Yp(v1)); P.lineTo(X((j + 1) / FPS), Yp(v2)); P.stroke();
-    }
-  }
-  if (S.show.mine) for (const i of vis) {
     const p = getPair(i); if (!p) continue;
-    P.strokeStyle = cMine;
-    for (let k = 0; k < p.map.length - 1; k++) {
-      const f1 = Math.round(p.map[k]), f2 = Math.round(p.map[k + 1]);
-      if (Math.abs(f2 - f1) > 4) continue;
-      const v1 = p.man.st[f1], v2 = p.man.st[f2]; if (isNaN(v1) || isNaN(v2)) continue;
-      const j = p.rs.a + k;
-      P.lineWidth = wfac(p.man, f1); P.beginPath(); P.moveTo(X(j / FPS), Yp(v1)); P.lineTo(X((j + 1) / FPS), Yp(v2)); P.stroke();
+    const v = new Float32Array(p.map.length);
+    for (let k = 0; k < v.length; k++) v[k] = p.man.st[Math.round(p.map[k])];
+    mine.push({ p, c: contour(v) });
+  }
+  const vals = [];
+  for (const v of cR) if (!isNaN(v)) vals.push(v);
+  for (const m of mine) for (const v of m.c) if (!isNaN(v)) vals.push(v);
+  let lo = vals.length ? pct(vals, .02) : -4, hi = vals.length ? pct(vals, .98) : 4;
+  if (hi - lo < 8) { const m = (hi + lo) / 2; lo = m - 4; hi = m + 4; }
+  const top = 14, bot = CH - 12;
+  const Y = (s) => bot - (Math.max(lo - 1.5, Math.min(hi + 1.5, s)) - lo) / (hi - lo) * (bot - top);
+  const step = Math.max(1, Math.floor(2 / ((W - 2 * PADX) / ((t1 - t0) * FPS))));
+
+  const lane = (cv, items, soft) => {
+    const ctx = setupCanvas(cv, W, CH);
+    if (S.view === "all") { const sg = segs[S.sel], a = X(sg.a / FPS); ctx.fillStyle = band; ctx.fillRect(a, 0, X(sg.b / FPS) - a, CH); }
+    // stressed syllables: a soft column that runs from the pitch accent down into the (big) word
+    const g = ctx.createLinearGradient(0, 0, 0, CH); g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(1, soft);
+    ctx.fillStyle = g;
+    for (const x of items) for (const s of x.syl) if (s.strong) { const a = X(s.a / FPS); ctx.fillRect(a, 0, Math.max(3, X(s.b / FPS) - a), CH); }
+    ctx.lineCap = "round"; ctx.lineJoin = "round";
+    return ctx;
+  };
+  const dots = (ctx, list, col) => {
+    for (const [x, y, n] of list) {
+      if (isNaN(y)) continue;
+      ctx.beginPath(); ctx.arc(x, y, n.strong ? 3.5 + 3 * n.norm : 2.6, 0, Math.PI * 2);
+      if (n.strong) { ctx.fillStyle = col; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = surface; ctx.stroke(); }
+      else { ctx.fillStyle = surface; ctx.fill(); ctx.lineWidth = 1.6; ctx.strokeStyle = col; ctx.stroke(); }
     }
-  }
-  const ry = rowsY();
-  const dot = (x, y, n, col) => {
-    Sx.beginPath(); Sx.arc(x, y, 3 + 7 * n.norm, 0, Math.PI * 2);
-    if (n.strong) { Sx.fillStyle = col; Sx.fill(); } else { Sx.fillStyle = surface; Sx.fill(); Sx.strokeStyle = col; Sx.lineWidth = 1.5; Sx.stroke(); }
   };
-  for (const [k, y] of [["ref", ry.ref], ["mine", ry.mine]]) {
-    if (!S.show[k]) continue;
-    Sx.strokeStyle = grid; Sx.lineWidth = 1; Sx.beginPath(); Sx.moveTo(0, y + .5); Sx.lineTo(W, y + .5); Sx.stroke();
+  const R = lane(cvR, itemsR, cRefSoft);
+  R.strokeStyle = cRef; R.lineWidth = 3.5; strokeContour(R, cR, j0, X, Y, step);
+  const refDots = [];
+  for (const i of vis) for (const n of REF.stats[i].nuclei) refDots.push([X(n.i / FPS), Y(valueNear(cR, n.i - j0)), n]);
+  dots(R, refDots, cRef);
+
+  const M = lane(cvM, itemsM, cMineSoft);
+  M.save(); M.globalAlpha = .55; M.strokeStyle = cRef; M.lineWidth = 2; M.setLineDash([2, 5]);
+  if (S.view === "all") { for (const m of mine) strokeContour(M, cR.subarray(m.p.rs.a - j0, m.p.rs.b - j0 + 1), m.p.rs.a, X, Y, step); }
+  else strokeContour(M, cR, j0, X, Y, step);
+  M.restore();
+  M.strokeStyle = cMine; M.lineWidth = 3.5;
+  const mineDots = [];
+  for (const m of mine) {
+    strokeContour(M, m.c, m.p.rs.a, X, Y, step);
+    for (const n of m.p.mst.nuclei) { const f = pairMineToRef(m.p, n.i); mineDots.push([X(f / FPS), Y(valueNear(m.c, f - m.p.rs.a)), n]); }
   }
-  for (const i of vis) {
-    if (S.show.ref) for (const n of REF.stats[i].nuclei) dot(X(n.i / FPS), ry.ref, n, cRef);
-    const p = getPair(i);
-    if (S.show.mine && p) for (const n of p.mst.nuclei) dot(X(pairMineToRef(p, n.i) / FPS), ry.mine, n, cMine);
-  }
-  for (const v of [0, -20, -40]) { I.strokeStyle = grid; I.lineWidth = 1; I.beginPath(); I.moveTo(0, Yi(v) + .5); I.lineTo(W, Yi(v) + .5); I.stroke(); }
-  const area = (pts, fill, col) => {
-    if (pts.length < 2) return;
-    if (fill) { I.beginPath(); I.moveTo(pts[0][0], Yi(dbMin)); pts.forEach(q => I.lineTo(q[0], q[1])); I.lineTo(pts[pts.length - 1][0], Yi(dbMin)); I.closePath(); I.fillStyle = fill; I.fill(); }
-    I.beginPath(); pts.forEach((q, n) => n ? I.lineTo(q[0], q[1]) : I.moveTo(q[0], q[1])); I.strokeStyle = col; I.lineWidth = 1.6; I.stroke();
-  };
-  if (S.show.ref) { const pts = []; for (let j = j0; j <= j1; j++) pts.push([X(j / FPS), Yi(an.env[j] - an.maxEnv)]); area(pts, cRefSoft, cRef); }
-  if (S.show.mine) for (const i of vis) {
-    const p = getPair(i); if (!p) continue;
-    const pts = []; for (let k = 0; k < p.map.length; k++) { const f = Math.round(p.map[k]); pts.push([X((p.rs.a + k) / FPS), Yi(p.man.env[f] - p.man.maxEnv)]); }
-    area(pts, null, cMine);
-  }
+  dots(M, mineDots, cMine);
+
+  $("tone-ref").textContent = toneOf(REF.stats[S.sel]);
+  const ps = getPair(S.sel);
+  $("tone-mine").textContent = ps ? toneOf(ps.mst) : "";
 }
-function drawWaveRef() {
-  const cv = $("wave-ref"), w = Math.max(100, cv.parentElement.clientWidth), h = 64, ctx = setupCanvas(cv, w, h, true);
-  if (!REF) { ctx.fillStyle = cssVar("--ink-3"); ctx.font = "12px " + cssVar("--body"); ctx.textAlign = "center"; ctx.fillText("未読み込み", w / 2, h / 2 + 4); return; }
-  REF.segs.forEach((s, i) => {
-    ctx.fillStyle = i === S.sel ? cssVar("--ref-soft") : cssVar("--band");
-    ctx.fillRect(s.a / FPS / REF.an.dur * w, 0, Math.max(1, (s.b - s.a) / FPS / REF.an.dur * w), h);
-  });
-  drawSamples(ctx, REF.samples, w, h, cssVar("--ref"));
-  ctx.font = "10px " + cssVar("--mono"); ctx.fillStyle = cssVar("--ink-3"); ctx.textBaseline = "top";
-  if (REF.segs.length <= 40) REF.segs.forEach((s, i) => ctx.fillText(String(i + 1), s.a / FPS / REF.an.dur * w + 2, 2));
-}
-function drawWaveMine() {
-  const cv = $("wave-mine"), w = Math.max(100, cv.parentElement.clientWidth), h = 44, ctx = setupCanvas(cv, w, h, true), tk = takes[S.sel];
-  if (!tk) { ctx.fillStyle = cssVar("--ink-3"); ctx.font = "12px " + cssVar("--body"); ctx.textAlign = "center"; ctx.fillText("録音するとここに波形が出ます", w / 2, h / 2 + 4); return; }
-  drawSamples(ctx, tk.samples, w, h, cssVar("--mine"));
-}
-function drawSamples(ctx, x, w, h, col) {
-  const n = x.length; let peak = 1e-6;
-  for (let i = 0; i < n; i += 7) peak = Math.max(peak, Math.abs(x[i]));
-  ctx.fillStyle = col; ctx.globalAlpha = .75;
-  for (let px = 0; px < w; px++) {
-    const s = Math.floor(px / w * n), e = Math.floor((px + 1) / w * n);
-    let mn = 0, mx = 0; for (let i = s; i < e; i += 3) { if (x[i] < mn) mn = x[i]; if (x[i] > mx) mx = x[i]; }
-    const y1 = h / 2 - mx / peak * (h / 2 - 5), y2 = h / 2 - mn / peak * (h / 2 - 5);
-    ctx.fillRect(px, y1, 1, Math.max(1, y2 - y1));
-  }
-  ctx.globalAlpha = 1;
-}
-function drawAll() { drawCharts(); drawWaveRef(); drawWaveMine(); }
+function drawAll() { drawCharts(); }
 
 /* ---------- playback ---------- */
 let cur = null, raf = 0, nowKey = "";
@@ -1397,23 +1226,20 @@ function markWords(line, frame) {
   if (words && frame != null) { const k = words.findIndex(w => frame >= w.a && frame <= w.b); if (k >= 0) key = line + ":" + k; }
   if (key === nowKey) return;
   nowKey = key;
-  document.querySelectorAll(".word.now,.wbtn.now").forEach(e => e.classList.remove("now"));
+  document.querySelectorAll(".wbtn.now").forEach(e => e.classList.remove("now"));
   if (!key) return;
   const [l, k] = key.split(":");
   document.querySelectorAll(`.wbtn[data-line="${l}"][data-w="${k}"]`).forEach(e => e.classList.add("now"));
-  if (+l === S.sel) document.querySelectorAll(`.word[data-w="${k}"]`).forEach(e => e.classList.add("now"));
 }
 function loop() {
   cancelAnimationFrame(raf);
   const ph = $("ph-chart"), scroller = $("scroller");
   let any = false;
   for (const k of PLAYERS) {
-    const a = audios[k], wph = $("ph-wave-" + (k === "conv" ? "ref" : k));
-    if (a.paused || !cur || cur.k !== k) { if (!(k === "ref" && cur && cur.k === "conv")) wph.style.display = "none"; continue; }
+    const a = audios[k];
+    if (a.paused || !cur || cur.k !== k) continue;
     any = true;
     if (a.currentTime >= cur.to) { finish(k); continue; }
-    const dur = k !== "mine" ? REF.an.dur : (takes[cur.line] ? takes[cur.line].an.dur : 1);
-    wph.style.display = "block"; wph.style.left = (a.currentTime / dur * 100) + "%";
     let tb = a.currentTime;
     if (k === "mine") { const p = getPair(cur.line); tb = p ? pairMineToRef(p, a.currentTime * FPS) / FPS : null; }
     if (tb == null) { ph.style.display = "none"; continue; }
@@ -1434,18 +1260,11 @@ $("inner").addEventListener("click", (e) => {
   if (!REF || !geo || e.target.closest("[data-w]")) return;
   const r = $("inner").getBoundingClientRect();
   const t = geo.t0 + (e.clientX - r.left - PADX) / (geo.W - 2 * PADX) * (geo.t1 - geo.t0);
-  if (S.view === "line") { const s = REF.segs[S.sel]; playRange("ref", Math.max(s.a / FPS, t), s.b / FPS, null, false, S.sel); }
-  else { const i = lineAtTime(t); if (i !== S.sel) select(i, { keepScroll: true }); playRange("ref", Math.max(0, t), Infinity); }
-});
-$("wwrap-ref").addEventListener("click", (e) => {
-  if (!REF) return;
-  const r = e.currentTarget.getBoundingClientRect(), t = (e.clientX - r.left) / r.width * REF.an.dur;
-  select(lineAtTime(t)); playRange("ref", t, Infinity, null, true);
-});
-$("wwrap-mine").addEventListener("click", (e) => {
-  const tk = takes[S.sel]; if (!tk) return;
-  const r = e.currentTarget.getBoundingClientRect();
-  playTake(S.sel, (e.clientX - r.left) / r.width * tk.an.dur, Infinity);
+  const i = S.view === "line" ? S.sel : lineAtTime(t), p = e.target.closest(".lane.mine") ? getPair(i) : null;
+  if (i !== S.sel) select(i, { keepScroll: true });
+  if (p) { const k = Math.max(0, Math.min(p.map.length - 1, Math.round(t * FPS) - p.rs.a)); playTake(i, p.map[k] / FPS, p.ms.b / FPS); return; }
+  if (S.view === "line") { const s = REF.segs[i]; playRange("ref", Math.max(s.a / FPS, t), s.b / FPS, null, false, i); }
+  else playRange("ref", Math.max(0, t), Infinity);
 });
 
 /* ---------- recorder ---------- */
@@ -1473,7 +1292,7 @@ function renderRecorder() {
     const got = normWords(tk.heard);
     heard = `<br>聞き取られた文：<span class="heard">${got.length ? got.map((w, k) => tk.heardOk && tk.heardOk[k] ? esc(w) : `<span class="x">${esc(w)}</span>`).join(" ") : "（聞き取れませんでした）"}</span>`;
   } else if (ASR.ready && !REF.isSample) heard = "<br>聞き取られた文：解析中…";
-  $("hist").innerHTML = `${esc(tk.label)} ・ ${((tk.seg.b - tk.seg.a) / FPS).toFixed(1)}秒（波形${CLICK}で再生）<br>一致度の記録：${h.map((v, n) => n === h.length - 1 ? `<b>${v}</b>` : v).join(" → ")}${heard}`;
+  $("hist").innerHTML = `${esc(tk.label)} ・ ${((tk.seg.b - tk.seg.a) / FPS).toFixed(1)}秒<br>一致度の記録：${h.map((v, n) => n === h.length - 1 ? `<b>${v}</b>` : v).join(" → ")}${heard}`;
 }
 function recStatus(t, live) { const el = $("rec-status"); el.textContent = t; el.classList.toggle("live", !!live); }
 function micError(e) {
@@ -1635,7 +1454,8 @@ async function asrRun(model, chunks, on) {
   }
   await asrMain(model, chunks, wrap);
 }
-function asrStatus(t) { $("asr-status").textContent = t; }
+function asrStatus(t) { $("asr-status").textContent = t; $("asr-box").hidden = !t; }
+function asrBusy(on) { ASR.busy = on; $("asr-run").disabled = on; $("asr-box").classList.toggle("busy", on); drawCharts(); }
 function asrBar(f) { $("asr-bar").style.width = Math.max(0, Math.min(100, f * 100)) + "%"; }
 function asrErrorText(e) {
   if (IN_HOST) return "Claude の中で開いたページでは文字起こしを使えません。Safari や Chrome で https://shiorisan.github.io/intonation-lens/ を開いてください。";
@@ -1679,7 +1499,7 @@ async function transcribeRef() {
   if (IN_HOST && !window.__IL_MOCK_ASR) { $("asr-host").hidden = false; asrStatus(""); return; }
   if (REF.isSample) { asrStatus("サンプル音声（合成音）は文字起こしできません。お手本の音声ファイルを読み込んでください。"); return; }
   const model = $("asr-model").value;
-  ASR.busy = true; $("asr-run").disabled = true; asrBar(0);
+  asrBusy(true); asrBar(0);
   asrStatus("文字起こしを準備しています…");
   // cut at pauses into ≤25 s pieces so word timestamps stay reliable
   const base = segment(REF.an, 0.3), pieces = []; let cs = null;
@@ -1704,21 +1524,20 @@ async function transcribeRef() {
         asrBar((d.k + 1) / chunks.length); asrStatus(`文字起こし中 ${d.k + 1} / ${chunks.length}`);
       }
     });
-  } catch (e) { asrStatus(asrErrorText(e)); asrBar(0); ASR.busy = false; $("asr-run").disabled = false; return; }
-  ASR.busy = false; $("asr-run").disabled = false; asrBar(1);
+  } catch (e) { asrStatus(asrErrorText(e)); asrBar(0); asrBusy(false); return; }
+  asrBar(1); asrBusy(false);
   words.sort((x, y) => x.a - y.a);
   const lines = buildLines(words);
   if (!lines.length) { asrStatus("言葉を聞き取れませんでした。英語の音声か、雑音が多すぎないか確認してください。"); return; }
   for (const k in takes) URL.revokeObjectURL(takes[k].url);
   takes = {};
   REF.transcript = lines;
-  $("script").value = lines.map(l => l.text).join("\n");
-  $("script-badge").textContent = "自動生成"; $("script-badge").hidden = false;
+  SCRIPT = lines.map(l => l.text).join("\n");
   S.pause = "auto"; $("pause").value = "auto"; S.sel = 0;
   resegment(); refreshAll();
   asrStatus(`文字起こしが終わりました：${lines.length}行・${words.length}語。単語の位置も音声に合わせてあります。`);
 }
-$("asr-run").addEventListener("click", transcribeRef);
+$("asr-run").addEventListener("click", () => { $("settings").close(); transcribeRef(); });
 if (IS_MOBILE) {
   $("asr-model").value = "Xenova/whisper-tiny.en";
   $("asr-model").querySelector('option[value="Xenova/whisper-small.en"]').textContent = "高精度（small・スマホでは重く失敗しやすい）";
@@ -1749,7 +1568,7 @@ async function transcribeTake(i) {
     const exp = normWords(scriptLines()[i] || ""), got = normWords(text);
     const { okE, okG } = lcsMark(exp, got);
     tk.heardOk = okG; tk.missing = exp.filter((w, k) => !okE[k]);
-    if (i === S.sel) { renderRecorder(); renderFeedback(); }
+    if (i === S.sel) renderRecorder();
   } catch (e) { /* recognition of your take is optional */ }
   finally { ASR.busy = false; }
 }
@@ -1903,52 +1722,18 @@ async function ensureConv() {
   const ck = semis + "|" + fm + "|" + tilt;
   let url = CONV.cache.get(ck);
   if (!url) {
-    $("key-info").textContent = `あなたの声のお手本を作成中…（キー ${fmtKey(semis)}・声質 ${fm}%）`;
+    setStatus("あなたの声のお手本を作成中…");
     await sleep(20);
     let y = pitchShift(REF.samples, REF.an, semis, fm / 100);
     y = await shelf(y, tilt);
     url = URL.createObjectURL(wavBlob(y));
     CONV.cache.set(ck, url); CONV.order.push(ck);
     while (CONV.order.length > 6) { const old = CONV.order.shift(); if (old !== ck) { URL.revokeObjectURL(CONV.cache.get(old)); CONV.cache.delete(old); } }
-    renderVoice();
+    setStatus("");
   }
   if (audios.conv.dataset.url !== url) { stopAll(); audios.conv.src = url; audios.conv.dataset.url = url; }
   return true;
 }
-function fmtKey(k) { return k > 0 ? "+" + k : k < 0 ? "−" + Math.abs(k) : "0"; }
-function noteName(f) {
-  if (!isFinite(f)) return "—";
-  const names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"], n = Math.round(12 * Math.log2(f / 440) + 69);
-  return names[(n % 12 + 12) % 12] + (Math.floor(n / 12) - 1);
-}
-function renderVoice() {
-  if (!REF) return;
-  const k = keyValue(), a = autoKey(), u = userMedF(), rf = REF.an.medF, tb = autoTimbre(), fm = fmtValue();
-  $("key-val").innerHTML = `${fmtKey(k)}<small>${S.key == null && a != null ? "自動" : S.key === 0 ? "原曲キー" : "手動"}</small>`;
-  $("key-down").disabled = k <= -12; $("key-up").disabled = k >= 12;
-  $("key-auto").disabled = a == null;
-  $("fmt-val").innerHTML = `${fm}%<small>${S.formant == null && tb ? "自動" : S.formant === 100 ? "お手本のまま" : "手動"}</small>`;
-  $("fmt-down").disabled = fm <= 80; $("fmt-up").disabled = fm >= 125; $("fmt-auto").disabled = !tb;
-  const shifted = rf * Math.pow(2, k / 12);
-  $("key-info").textContent = isFinite(u)
-    ? `あなたの声：平均 ${Math.round(u)}Hz（${noteName(u)}）・声質 ${tb ? Math.round(tb.alpha * 100) + "%" : "—"}${tb && tb.tilt ? `・明るさ ${tb.tilt > 0 ? "+" : ""}${tb.tilt}dB` : ""} ／ お手本：${Math.round(rf)}Hz（${noteName(rf)}）`
-    : `録音すると、あなたの声の高さと声質を測って、お手本をあなたの声に近づけます。お手本の平均は ${Math.round(rf)}Hz（${noteName(rf)}）です。`;
-  const pos = (f) => Math.max(0, Math.min(100, (Math.log2(f / 70) / Math.log2(400 / 70)) * 100));
-  $("key-scale").innerHTML = `<i class="k-ref" style="left:${pos(rf)}%" title="お手本"></i>${isFinite(u) ? `<i class="k-mine" style="left:${pos(u)}%" title="あなた"></i>` : ""}<i class="k-conv" style="left:${pos(shifted)}%" title="調整後"></i>`;
-  $("key-scale-note").innerHTML = `<span style="color:var(--ref)">●</span> お手本 ・ <span style="color:var(--mine)">●</span> あなた ・ <span style="color:var(--conv)">●</span> 調整後（${Math.round(shifted)}Hz）。声質は100%より小さいほど太く低い響き、大きいほど細く明るい響きになります。高さ・声の太さ・明るさをあなたの録音に寄せた、似た声質の別人が読むイメージです。`;
-}
-function rebuildIfNeeded() { if (S.modelVoice === "conv" || !audios.conv.paused) ensureConv(); }
-function setKey(v) { S.key = v; renderVoice(); rebuildIfNeeded(); }
-function setFmt(v) { S.formant = v; renderVoice(); rebuildIfNeeded(); }
-$("key-down").addEventListener("click", () => setKey(Math.max(-12, keyValue() - 1)));
-$("key-up").addEventListener("click", () => setKey(Math.min(12, keyValue() + 1)));
-$("key-auto").addEventListener("click", () => setKey(null));
-$("key-orig").addEventListener("click", () => setKey(0));
-$("fmt-down").addEventListener("click", () => setFmt(Math.max(80, fmtValue() - 2)));
-$("fmt-up").addEventListener("click", () => setFmt(Math.min(125, fmtValue() + 2)));
-$("fmt-auto").addEventListener("click", () => setFmt(null));
-$("fmt-orig").addEventListener("click", () => setFmt(100));
-
 /* ---------- loading the model ---------- */
 async function loadRef(file) {
   if (!file) return;
@@ -1971,12 +1756,12 @@ async function loadRef(file) {
   clearConv();
   REF = { name: file.name, samples: dec.samples, an, url, transcript: null, isSample: false };
   $("name-ref").textContent = file.name;
-  $("script").value = ""; $("script-badge").hidden = true;
+  SCRIPT = "";
   S.sel = 0;
   resegment(); setStatus("");
   recStatus("行を選んで「お手本を聞いてから録音」を押してください。");
   refreshAll();
-  if (IN_HOST && !window.__IL_MOCK_ASR) { $("asr-host").hidden = false; asrStatus("スクリプトは手で貼り付けることもできます（1行に1文）。"); }
+  if (IN_HOST && !window.__IL_MOCK_ASR) { $("asr-host").hidden = false; asrStatus(""); }
   else transcribeRef();
 }
 function refreshAll() {
@@ -2016,14 +1801,9 @@ seg("zoom", (v) => {
   if (geo) sc.scrollLeft = Math.max(0, geo.X(center) - sc.clientWidth / 2);
 });
 $("pause").addEventListener("change", (e) => { S.pause = e.target.value; resegment(); refreshAll(); });
-let stt = 0;
-$("script").addEventListener("input", () => {
-  clearTimeout(stt);
-  stt = setTimeout(() => { wordCache.clear(); if (S.pause === "auto") resegment(); refreshAll(); }, 450);
-});
-$("show-ref").addEventListener("change", (e) => { S.show.ref = e.target.checked; drawCharts(); });
-$("show-mine").addEventListener("change", (e) => { S.show.mine = e.target.checked; drawCharts(); });
-if (matchMedia("(max-width: 640px)").matches) $("tune").open = false;
+const dlg = $("settings");
+$("open-settings").addEventListener("click", () => dlg.showModal());
+dlg.addEventListener("click", (e) => { if (e.target === dlg) dlg.close(); });
 let rt = 0, lastW = 0;
 new ResizeObserver(() => { const w = $("scroller").clientWidth; if (w === lastW) return; lastW = w; clearTimeout(rt); rt = setTimeout(drawAll, 60); }).observe($("scroller"));
 new MutationObserver(drawAll).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
@@ -2071,12 +1851,12 @@ function loadSample() {
   const M2 = [{ d: .22, f: [208, 214], a: .8, c: 1, g: .02 }, { d: .16, f: [214, 212], a: .75, g: .02 }, { d: .16, f: [212, 214], a: .75, c: 1, g: .02 }, { d: .2, f: [216, 222], a: .82, c: 1, g: .02 }, { d: .2, f: [220, 226], a: .78 }];
   audios.ref.src = URL.createObjectURL(wavBlob(refSamples));
   REF = { name: "sample-native.wav", samples: refSamples, an: analyze(refSamples), url: audios.ref.src, transcript: null, isSample: true };
-  $("name-ref").innerHTML = `sample-native.wav <span class="badge-sample">サンプル（合成音）</span>`;
+  $("name-ref").innerHTML = `sample-native.wav <span class="badge-sample" title="合成音のサンプル">サンプル</span>`;
   resegment();
   setTake(0, synth(M1), "サンプル録音（合成音）", true);
   setTake(1, synth(M2), "サンプル録音（合成音）", true);
   recStatus(`行1・行2にはサンプルの録音が入っています。行3を選んで、自分で録音してみてください${TOUCH ? "" : "（Rキーでも開始）"}。`);
-  asrStatus(IN_HOST ? "サンプルのスクリプトを表示中です。" : "サンプルのスクリプトを表示中です。お手本の音声を読み込むと、自動で文字起こしします（初回はモデルのダウンロードに少し時間がかかります）。");
+  asrStatus(IN_HOST ? "" : "サンプルを表示中です。お手本の音声を読み込むと、自動で文字起こしします（初回はモデルのダウンロードに少し時間がかかります）。");
   refreshAll();
 }
 loadSample();
