@@ -4,7 +4,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700;12..96,800&family=IBM+Plex+Sans+JP:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: source file → line list → one practice panel (prosody view: intonation contour over stress-sized words → listen → record). Settings live in a dialog. */
+/* Layout: source file → line list → one practice panel (line nav + listen/record controls, then the prosody view: intonation contour over stress-sized words). Settings live in a dialog. */
 :root{
   --bg:#EEF2F4; --surface:#FFFFFF; --surface-2:#F4F7F8; --band:#EAF0F3; --ink:#15212B; --ink-2:#4A5A67; --ink-3:#7C8B97;
   --line:#D8E0E6; --grid:#E3E9ED;
@@ -118,7 +118,7 @@ select.sel{border:1px solid var(--line);background:var(--surface);border-radius:
 
 /* practice panel */
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:14px;min-width:0}
-.panel-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px 16px}
+.panel-head{display:flex;align-items:flex-start;gap:12px 20px}
 .nav{display:flex;align-items:center;gap:6px}
 .nav .pos{font-family:var(--display);font-weight:700;font-size:20px;min-width:5.5em;text-align:center;font-variant-numeric:tabular-nums}
 .nav .pos small,.mb-pos small{font-family:var(--mono);font-size:12px;color:var(--ink-3);font-weight:400}
@@ -133,8 +133,8 @@ select.sel{border:1px solid var(--line);background:var(--surface);border-radius:
 .lane-head{position:sticky;left:0;display:inline-flex;align-items:center;gap:8px;font-size:12px;z-index:1;padding-right:6px;background:var(--surface);border-radius:6px}
 .lane-head .who{font-weight:700}
 .lane.ref .who{color:var(--ref)} .lane.mine .who{color:var(--mine)}
-.tone{font-size:12px;color:var(--ink-2);background:var(--surface-2);border-radius:999px;padding:0 8px;white-space:nowrap}
-.tone:empty{display:none}
+.ftone{font-size:12px;color:var(--ink-2);background:var(--surface-2);border-radius:999px;padding:0 8px;white-space:nowrap}
+.ftone:empty{display:none}
 .lane canvas{display:block}
 .wrow{display:flex;align-items:baseline;white-space:nowrap;min-height:58px;padding:0 0 6px}
 .wrow.ref{--c:var(--ref);--c-soft:var(--ref-soft)} .wrow.mine{--c:var(--mine);--c-soft:var(--mine-soft)}
@@ -145,22 +145,15 @@ select.sel{border:1px solid var(--line);background:var(--surface);border-radius:
 .syl.s{color:var(--c);font-weight:800}
 .syl.w{color:var(--ink-2)}
 .syl + .syl{margin-left:1px}
-.lane-empty{position:sticky;left:0;font-size:13px;color:var(--ink-3);align-self:center;white-space:normal;max-width:min(560px,calc(100vw - 72px));line-height:1.5;padding-left:2px}
-.pv-key{display:flex;flex-wrap:wrap;gap:2px 14px;font-size:12px;color:var(--ink-3);align-items:center}
-.pv-key i{display:inline-block;vertical-align:middle;margin-right:4px}
-.pv-key .k-line{width:18px;height:3px;border-radius:2px;background:var(--ink-2)}
-.pv-key .k-dash{width:18px;border-top:2px dashed var(--ref);opacity:.7}
-.pv-key .k-dot{width:9px;height:9px;border-radius:50%;background:var(--ink-2)}
 .playhead{position:absolute;top:0;bottom:0;width:2px;background:var(--ink);opacity:.6;pointer-events:none;display:none;z-index:2}
 
-/* listen + record */
-.listen{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
-.listen .lbl{margin-right:2px}
-.recorder{display:flex;flex-direction:column;gap:8px;background:var(--surface-2);border-radius:12px;padding:12px}
-.rec-title{font-size:13px;font-weight:700;color:var(--mine)}
+/* listen + record, merged next to the line nav */
+.practice{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.pr-btns{display:flex;flex-wrap:wrap;gap:8px 22px;align-items:center}
+.pr-grp{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .btn.recbtn{background:var(--rec);border-color:var(--rec);color:var(--on-accent);font-weight:700}
 .btn .dot{width:10px;height:10px;border-radius:50%;background:currentColor;flex:none}
-.rec-status{font-size:13px;color:var(--ink-2);min-height:1.6em}
+.rec-status{font-size:13px;color:var(--ink-2)}
 .rec-status.live{color:var(--rec);font-weight:700}
 .hist{font-family:var(--mono);font-size:12px;color:var(--ink-3);line-height:1.6}
 .hist b{color:var(--ink)}
@@ -210,10 +203,13 @@ dialog.sheet::backdrop{background:rgba(10,16,22,.45)}
   .iconbtn{width:44px;height:44px}
   select.sel{min-height:44px;font-size:16px}
   .seg button,.set-grp .seg button{min-height:42px;padding:8px 6px}
-  .panel-head{display:none}
+  .panel-head{order:1;display:block}
+  .panel-head > .nav{display:none}
+  .practice{gap:8px}
+  .pr-btns{flex-direction:column;align-items:stretch;gap:12px}
+  .pr-grp + .pr-grp{padding:12px;border:0;background:var(--surface-2);border-radius:12px}
   .source .row{flex:1 1 100%}
-  .source .row .btn,.listen .btn,.recorder .row .btn{flex:1 1 auto}
-  .listen .lbl{flex-basis:100%}
+  .source .row .btn,.pr-grp .btn{flex:1 1 auto}
   .line-card{width:min(72vw,240px)}
   .wrow{min-height:50px}
   .metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
@@ -267,59 +263,51 @@ dialog.sheet::backdrop{background:rgba(10,16,22,.45)}
 
   <div class="panel" id="practice">
     <div class="panel-head">
-      <div class="nav">
+      <div class="nav" title="← → で行を移動 ・ R で録音">
         <button class="iconbtn" id="prev" type="button" aria-label="前の行"><svg viewBox="0 0 16 16"><path d="M10 3L5 8l5 5"/></svg></button>
         <div class="pos" id="pos">—</div>
         <button class="iconbtn" id="next" type="button" aria-label="次の行"><svg viewBox="0 0 16 16"><path d="M6 3l5 5-5 5"/></svg></button>
       </div>
-      <span class="hint-s kbd-hint">← → で行を移動 ・ R で録音</span>
+      <div class="practice">
+        <div class="pr-btns">
+          <div class="pr-grp" role="group" aria-label="聞き比べ">
+            <button class="btn tone ref-c" id="lp-ref" type="button"><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg>お手本</button>
+            <button class="btn tone conv-c" id="lp-conv" type="button"><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg>あなたの声のお手本</button>
+            <button class="btn tone mine-c" id="lp-mine" type="button"><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg>あなたの録音</button>
+            <button class="btn" id="lp-both" type="button">お手本 → あなた</button>
+          </div>
+          <div class="pr-grp" role="group" aria-label="録音">
+            <button class="btn recbtn" id="rec-model" type="button"><span class="dot"></span>お手本を聞いてから録音</button>
+            <button class="btn tone rec-c" id="rec-now" type="button"><span class="dot"></span>すぐに録音</button>
+            <label class="btn" for="file-take">ファイルから</label>
+            <input class="vh" type="file" id="file-take" accept="audio/*,video/*,.mp3,.m4a,.mp4,.wav,.webm,.ogg,.aac,.mov">
+          </div>
+        </div>
+        <div class="meter" id="lvl-meter" aria-hidden="true" hidden><span id="lvl"></span></div>
+        <div class="rec-status" id="rec-status" role="status">お手本を聞いたあと、同じように読んでください。話し終えて1秒ほど黙ると自動で止まります。</div>
+        <div class="err" id="mic-err" hidden></div>
+        <div class="hist" id="hist">この行はまだ録音していません。</div>
+      </div>
     </div>
 
     <div class="prosody" id="chart">
       <div class="scroller" id="scroller">
         <div class="inner" id="inner">
           <div class="lane ref">
-            <div class="lane-head"><span class="who">お手本</span><span class="tone" id="tone-ref"></span></div>
+            <div class="lane-head"><span class="who">お手本</span><span class="ftone" id="tone-ref"></span></div>
             <canvas id="c-ref"></canvas>
             <div class="wrow ref" id="wrow-ref"></div>
           </div>
           <div class="lane mine">
-            <div class="lane-head"><span class="who">あなた</span><span class="tone" id="tone-mine"></span></div>
+            <div class="lane-head"><span class="who">あなた</span><span class="ftone" id="tone-mine"></span></div>
             <canvas id="c-mine"></canvas>
             <div class="wrow mine" id="wrow-mine"></div>
           </div>
           <div class="playhead" id="ph-chart"></div>
         </div>
       </div>
-      <div class="pv-key">
-        <span><i class="k-line"></i>声の上がり下がり（イントネーション）</span>
-        <span><i class="k-dot"></i>音節（大きい●・大きい文字＝強勢）</span>
-        <span><i class="k-dash"></i>お手本の形（あなたの段）</span>
-        <span>単語を<span class="clk">クリック</span>で発音</span>
-      </div>
     </div>
 
-    <div class="listen">
-      <span class="lbl">聞き比べ</span>
-      <button class="btn tone ref-c" id="lp-ref" type="button"><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg>お手本</button>
-      <button class="btn tone conv-c" id="lp-conv" type="button"><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg>あなたの声のお手本</button>
-      <button class="btn tone mine-c" id="lp-mine" type="button"><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg>あなたの録音</button>
-      <button class="btn" id="lp-both" type="button">お手本 → あなた</button>
-    </div>
-
-    <div class="recorder">
-      <div class="rec-title" id="rec-title">あなたの録音</div>
-      <div class="row">
-        <button class="btn recbtn" id="rec-model" type="button"><span class="dot"></span>お手本を聞いてから録音</button>
-        <button class="btn tone rec-c" id="rec-now" type="button"><span class="dot"></span>すぐに録音</button>
-        <label class="btn" for="file-take">ファイルから</label>
-        <input class="vh" type="file" id="file-take" accept="audio/*,video/*,.mp3,.m4a,.mp4,.wav,.webm,.ogg,.aac,.mov">
-      </div>
-      <div class="meter" aria-hidden="true"><span id="lvl"></span></div>
-      <div class="rec-status" id="rec-status" role="status">お手本を聞いたあと、同じように読んでください。話し終えて1秒ほど黙ると自動で止まります。</div>
-      <div class="err" id="mic-err" hidden></div>
-      <div class="hist" id="hist">この行はまだ録音していません。</div>
-    </div>
   </div>
 
   <div class="metrics" id="metrics"></div>
@@ -1069,7 +1057,7 @@ function drawCharts() {
   if (!REF) {
     $("inner").style.width = clientW + "px";
     setupCanvas(cvR, clientW, CH); setupCanvas(cvM, clientW, CH);
-    rowR.innerHTML = `<span class="lane-empty">お手本の音声を読み込むと、ここにイントネーションと強勢が表示されます。</span>`; rowM.innerHTML = "";
+    rowR.innerHTML = rowM.innerHTML = "";
     $("tone-ref").textContent = $("tone-mine").textContent = ""; geo = null; return;
   }
   const segs = REF.segs, an = REF.an;
@@ -1081,9 +1069,8 @@ function drawCharts() {
   // words first: their rendered widths decide how wide the timeline must be so labels never collide
   const itemsR = [], itemsM = [];
   for (const i of vis) { itemsR.push(...wordItems(i, "ref")); itemsM.push(...wordItems(i, "mine")); }
-  const hasTake = vis.some(i => takes[i]);
-  rowR.innerHTML = itemsR.map(x => x.html).join("") || `<span class="lane-empty">${ASR.busy ? "文字起こし中です。終わると単語が表示されます。" : "この行の文字起こしがないため、単語は表示できません。"}</span>`;
-  rowM.innerHTML = itemsM.map(x => x.html).join("") || `<span class="lane-empty">${hasTake ? "" : "録音すると、点線のお手本に重ねてあなたのイントネーションが表示されます。"}</span>`;
+  rowR.innerHTML = itemsR.map(x => x.html).join("");
+  rowM.innerHTML = itemsM.map(x => x.html).join("");
   const btnR = [...rowR.querySelectorAll(".wbtn")], btnM = [...rowM.querySelectorAll(".wbtn")];
   btnR.forEach((b, k) => { itemsR[k].w = b.offsetWidth; }); btnM.forEach((b, k) => { itemsM[k].w = b.offsetWidth; });
   let pxs = S.zoom === "fit" ? 0 : +S.zoom;
@@ -1280,10 +1267,10 @@ function recUI() {
     bm.disabled = rec.state !== "idle" || !REF; bn.disabled = rec.state !== "idle" || !REF;
   }
   $("file-take").disabled = rec.state !== "idle";
+  $("lvl-meter").hidden = rec.state !== "recording";
   syncBar();
 }
 function renderRecorder() {
-  $("rec-title").textContent = lineCount() ? `あなたの録音 ・ 行 ${S.sel + 1}` : "あなたの録音";
   const tk = takes[S.sel];
   if (!tk) { $("hist").textContent = "この行はまだ録音していません。"; return; }
   const h = tk.history.map(v => isNaN(v) ? "—" : v + "%");
@@ -1292,7 +1279,7 @@ function renderRecorder() {
     const got = normWords(tk.heard);
     heard = `<br>聞き取られた文：<span class="heard">${got.length ? got.map((w, k) => tk.heardOk && tk.heardOk[k] ? esc(w) : `<span class="x">${esc(w)}</span>`).join(" ") : "（聞き取れませんでした）"}</span>`;
   } else if (ASR.ready && !REF.isSample) heard = "<br>聞き取られた文：解析中…";
-  $("hist").innerHTML = `${esc(tk.label)} ・ ${((tk.seg.b - tk.seg.a) / FPS).toFixed(1)}秒<br>一致度の記録：${h.map((v, n) => n === h.length - 1 ? `<b>${v}</b>` : v).join(" → ")}${heard}`;
+  $("hist").innerHTML = `${esc(tk.label)} ・ ${((tk.seg.b - tk.seg.a) / FPS).toFixed(1)}秒 ・ 一致度の記録：${h.map((v, n) => n === h.length - 1 ? `<b>${v}</b>` : v).join(" → ")}${heard}`;
 }
 function recStatus(t, live) { const el = $("rec-status"); el.textContent = t; el.classList.toggle("live", !!live); }
 function micError(e) {
