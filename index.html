@@ -124,7 +124,7 @@ select.sel{border:1px solid var(--line);background:var(--surface);border-radius:
 .lbl{font-size:12px;font-weight:700;color:var(--ink-2);letter-spacing:.04em}
 
 /* prosody view: per speaker, a smooth F0 contour sits directly above the words; word size = stress */
-.prosody{display:flex;flex-direction:column;gap:6px;min-width:0}
+.prosody{display:flex;flex-direction:column;gap:6px;min-width:0;position:relative}
 .scroller{overflow-x:auto;overflow-y:hidden;min-width:0;cursor:pointer}
 .inner{position:relative}
 .lane{position:relative}
@@ -132,7 +132,10 @@ select.sel{border:1px solid var(--line);background:var(--surface);border-radius:
 .lane-head{position:sticky;left:0;display:inline-flex;align-items:center;gap:8px;font-size:12px;z-index:1;padding-right:6px;background:var(--surface);border-radius:6px}
 .lane-head .who{font-weight:700}
 .lane.ref .who{color:var(--ref)} .lane.mine .who{color:var(--mine)}
-.lane canvas{display:block}
+.strip{position:relative}
+.strip + .strip{margin-top:6px}
+.strip canvas{display:block}
+.wrow.measure{position:absolute;left:-9999px;top:0;visibility:hidden;pointer-events:none}
 .wrow{display:flex;align-items:baseline;white-space:nowrap;min-height:58px;padding:0 0 6px}
 .wrow.ref{--c:var(--ref);--c-soft:var(--ref-soft)} .wrow.mine{--c:var(--mine);--c-soft:var(--mine-soft)}
 .wbtn{flex:none;border:0;background:none;padding:2px 2px;border-radius:6px;cursor:pointer;font-family:var(--display);line-height:1.15;color:var(--ink);display:inline-flex;align-items:baseline}
@@ -268,7 +271,7 @@ dialog.sheet::backdrop{background:rgba(10,16,22,.45)}
           <button class="btn tone mine-c" id="lp-mine" type="button"><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg>あなたの録音</button>
         </div>
         <div class="meter" id="lvl-meter" aria-hidden="true" hidden><span id="lvl"></span></div>
-        <div class="rec-status" id="rec-status" role="status">「録音」を押すとすぐに録音が始まります。話し終えて1秒ほど黙ると自動で止まります。</div>
+        <div class="rec-status" id="rec-status" role="status">「録音」を押すとすぐに録音が始まります。自分のペースで読んで、話し終えて2秒ほど黙るか「停止」を押すと止まります。</div>
         <div class="err" id="mic-err" hidden></div>
         <div class="hist" id="hist">この行はまだ録音していません。</div>
       </div>
@@ -279,17 +282,15 @@ dialog.sheet::backdrop{background:rgba(10,16,22,.45)}
         <div class="inner" id="inner">
           <div class="lane ref">
             <div class="lane-head"><span class="who">お手本</span></div>
-            <canvas id="c-ref"></canvas>
-            <div class="wrow ref" id="wrow-ref"></div>
+            <div class="strips" id="strips-ref"></div>
           </div>
           <div class="lane mine">
             <div class="lane-head"><span class="who">あなた</span></div>
-            <canvas id="c-mine"></canvas>
-            <div class="wrow mine" id="wrow-mine"></div>
+            <div class="strips" id="strips-mine"></div>
           </div>
-          <div class="playhead" id="ph-chart"></div>
         </div>
       </div>
+      <div class="wrow measure" id="measure" aria-hidden="true"></div>
     </div>
 
   </div>
@@ -770,14 +771,37 @@ function mineWordStrengths(i, words) {
 function lineCount() { return REF ? REF.segs.length : 0; }
 function getPair(i) {
   const tk = takes[i]; if (!REF || !tk || !REF.segs[i]) return null;
-  const key = i + ":" + S.align + ":" + tk.id + ":" + REF.segs[i].a + "-" + REF.segs[i].b;
+  const key = i + ":" + S.align + ":" + tk.id + ":" + REF.segs[i].a + "-" + REF.segs[i].b + ":" + (tk.anchors ? tk.anchors.length : 0);
   if (pairCache.has(key)) return pairCache.get(key);
   const rs = REF.segs[i], ms = tk.seg;
-  const map = (S.align === "dtw" ? dtwMap : linearMap)({ an: REF.an, a: rs.a, b: rs.b }, { an: tk.an, a: ms.a, b: ms.b });
+  const map = anchoredMap(i, tk, rs, ms) || (S.align === "dtw" ? dtwMap : linearMap)({ an: REF.an, a: rs.a, b: rs.b }, { an: tk.an, a: ms.a, b: ms.b });
   const p = { i, map, rs, ms, rst: REF.stats[i], mst: tk.stats, man: tk.an };
   p.cmp = compare(p);
   pairCache.set(key, p);
   return p;
+}
+// Word-anchored time map: each script word in the model is pinned to the same word in your take (from the
+// recogniser's word times on your own recording), and only the stretch between anchors is aligned by sound.
+// Pace no longer matters — a slow or pausing reading is compared word for word.
+function anchoredMap(i, tk, rs, ms) {
+  const words = wordTiming(i);
+  if (!tk.anchors || tk.anchors.length < 2 || !words) return null;
+  const pts = [[rs.a, ms.a]];
+  for (const an of tk.anchors) {
+    const w = words[an.k]; if (!w) continue;
+    for (const [r, m] of [[w.a, an.ma], [w.b, an.mb]]) {
+      const [r0, m0] = pts[pts.length - 1], mm = Math.max(ms.a, Math.min(ms.b, m));
+      if (r > r0 && r < rs.b && mm > m0 && mm < ms.b) pts.push([r, mm]);
+    }
+  }
+  pts.push([rs.b, ms.b]);
+  if (pts.length < 4) return null;
+  const f = S.align === "dtw" ? dtwMap : linearMap, out = [];
+  for (let q = 1; q < pts.length; q++) {
+    const part = f({ an: REF.an, a: pts[q - 1][0], b: pts[q][0] }, { an: tk.an, a: pts[q - 1][1], b: pts[q][1] });
+    for (let k = 0; k < part.length - (q < pts.length - 1 ? 1 : 0); k++) out.push(part[k]);
+  }
+  return Float32Array.from(out);
 }
 function pairMineToRef(p, m) {
   let best = 0, bd = Infinity;
@@ -920,8 +944,7 @@ function onWordClick(e) {
   if (line !== S.sel) select(line, { keepScroll: true });
   playWord(line, k, b.dataset.who);
 }
-$("wrow-ref").addEventListener("click", onWordClick);
-$("wrow-mine").addEventListener("click", onWordClick);
+$("inner").addEventListener("click", onWordClick);
 function playWord(i, k, who) {
   const words = wordTiming(i); if (!words || !words[k]) return;
   const w = words[k];
@@ -1034,50 +1057,58 @@ function wordItems(i, who) {
     return { i, a: w.a, b: w.b, syl, html: `<button type="button" class="wbtn" data-line="${i}" data-w="${k}" data-who="${who}" title="${esc(w.clean)}${tip}">${syl.map(s => sylHTML(s, true)).join("")}</button>` };
   });
 }
+function measureWidths(items, who) {
+  const m = $("measure"); m.className = "wrow measure " + who; m.innerHTML = items.map(x => x.html).join("");
+  const w = [...m.children].map(b => b.offsetWidth); m.innerHTML = ""; return w;
+}
 function drawCharts() {
-  const scroller = $("scroller"), clientW = Math.max(200, scroller.clientWidth), CH = innerWidth <= 640 ? 96 : 124;
-  const rowR = $("wrow-ref"), rowM = $("wrow-mine"), cvR = $("c-ref"), cvM = $("c-mine");
+  const scroller = $("scroller"), clientW = Math.max(200, scroller.clientWidth), phone = innerWidth <= 640;
+  const laneR = $("strips-ref"), laneM = $("strips-mine");
   const cRef = cssVar("--ref"), cMine = cssVar("--mine"), cRefSoft = cssVar("--ref-soft"), cMineSoft = cssVar("--mine-soft"), surface = cssVar("--surface"), band = cssVar("--band");
-  if (!REF) {
-    $("inner").style.width = clientW + "px";
-    setupCanvas(cvR, clientW, CH); setupCanvas(cvM, clientW, CH);
-    rowR.innerHTML = rowM.innerHTML = "";
-    geo = null; return;
-  }
+  if (!REF) { laneR.innerHTML = laneM.innerHTML = ""; $("inner").style.width = ""; geo = null; return; }
   const segs = REF.segs, an = REF.an;
-  let t0, t1;
-  if (S.view === "line") { const sg = segs[S.sel]; t0 = sg.a / FPS; t1 = Math.max(sg.b / FPS, t0 + 0.3); }
-  else { t0 = 0; t1 = an.dur; }
+  let T0, T1;
+  if (S.view === "line") { const sg = segs[S.sel]; T0 = sg.a / FPS; T1 = Math.max(sg.b / FPS, T0 + 0.3); }
+  else { T0 = 0; T1 = an.dur; }
   const vis = S.view === "line" ? [S.sel] : segs.map((_, i) => i);
-
-  // words first: their rendered widths decide how wide the timeline must be so labels never collide
   const itemsR = [], itemsM = [];
   for (const i of vis) { itemsR.push(...wordItems(i, "ref")); itemsM.push(...wordItems(i, "mine")); }
-  rowR.innerHTML = itemsR.map(x => x.html).join("");
-  rowM.innerHTML = itemsM.map(x => x.html).join("");
-  const btnR = [...rowR.querySelectorAll(".wbtn")], btnM = [...rowM.querySelectorAll(".wbtn")];
-  btnR.forEach((b, k) => { itemsR[k].w = b.offsetWidth; }); btnM.forEach((b, k) => { itemsM[k].w = b.offsetWidth; });
-  let pxs = S.zoom === "fit" ? 0 : +S.zoom;
-  if (S.view === "all" && !pxs) pxs = 150;
-  for (const i of vis) {
-    const d = Math.max(0.3, (segs[i].b - segs[i].a) / FPS);
-    for (const items of [itemsR, itemsM]) pxs = Math.max(pxs, items.filter(x => x.i === i).reduce((s, x) => s + x.w + 4, 0) * 1.08 / d);
-  }
-  const W = Math.min(30000, Math.round(Math.max(clientW, (t1 - t0) * pxs + 2 * PADX)));
-  const X = (t) => PADX + (t - t0) / (t1 - t0) * (W - 2 * PADX);
-  geo = { t0, t1, W, X };
-  $("inner").style.width = W + "px";
-  const place = (items, btns) => {
-    const L = items.map(x => X((x.a + x.b) / 2 / FPS) - x.w / 2);
-    for (let k = 0; k < L.length; k++) L[k] = Math.max(L[k], k ? L[k - 1] + items[k - 1].w + 4 : 2);
-    for (let k = L.length - 1; k >= 0; k--) L[k] = Math.min(L[k], k < L.length - 1 ? L[k + 1] - items[k].w - 4 : W - items[k].w - 2);
-    let prev = 0;
-    btns.forEach((b, k) => { b.style.marginLeft = (L[k] - prev).toFixed(1) + "px"; prev = L[k] + items[k].w; });
-  };
-  place(itemsR, btnR); place(itemsM, btnM);
+  measureWidths(itemsR, "ref").forEach((w, k) => { itemsR[k].w = w; });
+  measureWidths(itemsM, "mine").forEach((w, k) => { itemsM[k].w = w; });
 
-  // contours (semitones re. each speaker's own median), on a shared vertical scale
-  const j0 = Math.max(0, Math.floor(t0 * FPS)), j1 = Math.min(an.N - 1, Math.ceil(t1 * FPS));
+  // rows ("strips"): in the fitted one-line view a sentence wraps onto as many rows as it needs, so it never scrolls sideways
+  const avail = clientW - 2 * PADX;
+  let strips;
+  if (S.view === "line" && S.zoom === "fit" && itemsR.length) {
+    const need = itemsR.map((x, k) => Math.max(x.w, itemsM[k] ? itemsM[k].w : 0) * 1.08 + 4);
+    const total = need.reduce((a, b) => a + b, 0), n = Math.max(1, Math.ceil(total / avail)), target = total / n;
+    const groups = []; let cur = [], sum = 0;
+    need.forEach((w, k) => {
+      if (cur.length && (sum + w > avail || (groups.length < n - 1 && sum + w / 2 > target))) { groups.push(cur); cur = []; sum = 0; }
+      cur.push(k); sum += w;
+    });
+    groups.push(cur);
+    strips = groups.map((g, q) => ({
+      t0: q ? itemsR[g[0]].a / FPS : T0, t1: q < groups.length - 1 ? itemsR[groups[q + 1][0]].a / FPS : T1,
+      R: g.map(k => itemsR[k]), M: itemsM.length ? g.map(k => itemsM[k]) : [], W: clientW
+    }));
+  } else {
+    let pxs = S.zoom === "fit" ? 0 : +S.zoom;
+    if (S.view === "all" && !pxs) pxs = 150;
+    for (const i of vis) {
+      const d = Math.max(0.3, (segs[i].b - segs[i].a) / FPS);
+      for (const items of [itemsR, itemsM]) pxs = Math.max(pxs, items.filter(x => x.i === i).reduce((s, x) => s + x.w + 4, 0) * 1.08 / d);
+    }
+    strips = [{ t0: T0, t1: T1, R: itemsR, M: itemsM, W: Math.min(30000, Math.round(Math.max(clientW, (T1 - T0) * pxs + 2 * PADX))) }];
+  }
+  strips.forEach(st => { st.X = (t) => PADX + (t - st.t0) / (st.t1 - st.t0) * (st.W - 2 * PADX); });
+  geo = { strips, t0: strips[0].t0, t1: strips[0].t1, W: strips[0].W, X: strips[0].X };
+  $("inner").style.width = Math.max(...strips.map(st => st.W)) + "px";
+  const stripHTML = (who) => strips.map((_, q) => `<div class="strip" data-s="${q}"><canvas></canvas><div class="wrow ${who}"></div><div class="playhead"></div></div>`).join("");
+  laneR.innerHTML = stripHTML("ref"); laneM.innerHTML = stripHTML("mine");
+
+  // contours (semitones re. each speaker's own median), on one vertical scale shared by every row and lane
+  const j0 = Math.max(0, Math.floor(T0 * FPS)), j1 = Math.min(an.N - 1, Math.ceil(T1 * FPS));
   const cR = contour(an.st.subarray(j0, j1 + 1));
   const mine = [];
   for (const i of vis) {
@@ -1091,11 +1122,17 @@ function drawCharts() {
   for (const m of mine) for (const v of m.c) if (!isNaN(v)) vals.push(v);
   let lo = vals.length ? pct(vals, .02) : -4, hi = vals.length ? pct(vals, .98) : 4;
   if (hi - lo < 8) { const m = (hi + lo) / 2; lo = m - 4; hi = m + 4; }
-  const top = 14, bot = CH - 12;
+  const CH = phone ? (strips.length > 1 ? 80 : 96) : 124, top = 14, bot = CH - 12;
   const Y = (s) => bot - (Math.max(lo - 1.5, Math.min(hi + 1.5, s)) - lo) / (hi - lo) * (bot - top);
-  const step = Math.max(1, Math.floor(2 / ((W - 2 * PADX) / ((t1 - t0) * FPS))));
 
-  const lane = (cv, items, soft) => {
+  const place = (items, btns, W, X) => {
+    const L = items.map(x => X((x.a + x.b) / 2 / FPS) - x.w / 2);
+    for (let k = 0; k < L.length; k++) L[k] = Math.max(L[k], k ? L[k - 1] + items[k - 1].w + 4 : 2);
+    for (let k = L.length - 1; k >= 0; k--) L[k] = Math.min(L[k], k < L.length - 1 ? L[k + 1] - items[k].w - 4 : W - items[k].w - 2);
+    let prev = 0;
+    btns.forEach((b, k) => { b.style.marginLeft = (L[k] - prev).toFixed(1) + "px"; prev = L[k] + items[k].w; });
+  };
+  const lane = (cv, items, soft, W, X) => {
     const ctx = setupCanvas(cv, W, CH);
     if (S.view === "all") { const sg = segs[S.sel], a = X(sg.a / FPS); ctx.fillStyle = band; ctx.fillRect(a, 0, X(sg.b / FPS) - a, CH); }
     // stressed syllables: a soft column that runs from the pitch accent down into the (big) word
@@ -1113,24 +1150,35 @@ function drawCharts() {
       else { ctx.fillStyle = surface; ctx.fill(); ctx.lineWidth = 1.6; ctx.strokeStyle = col; ctx.stroke(); }
     }
   };
-  const R = lane(cvR, itemsR, cRefSoft);
-  R.strokeStyle = cRef; R.lineWidth = 3.5; strokeContour(R, cR, j0, X, Y, step);
-  const refDots = [];
-  for (const i of vis) for (const n of REF.stats[i].nuclei) refDots.push([X(n.i / FPS), Y(valueNear(cR, n.i - j0)), n]);
-  dots(R, refDots, cRef);
+  strips.forEach((st, q) => {
+    const { W, X } = st, f0 = Math.floor(st.t0 * FPS), f1 = Math.ceil(st.t1 * FPS), inS = (f) => f >= f0 && f <= f1;
+    const step = Math.max(1, Math.floor(2 / ((W - 2 * PADX) / ((st.t1 - st.t0) * FPS))));
+    const part = (c, base, lo2 = f0, hi2 = f1) => { const a = Math.max(0, lo2 - base), b = Math.min(c.length - 1, hi2 - base); return b >= a ? [c.subarray(a, b + 1), base + a] : null; };
+    const elR = laneR.children[q], elM = laneM.children[q];
+    const rowR = elR.querySelector(".wrow"), rowM = elM.querySelector(".wrow");
+    rowR.innerHTML = st.R.map(x => x.html).join(""); rowM.innerHTML = st.M.map(x => x.html).join("");
+    place(st.R, [...rowR.children], W, X); place(st.M, [...rowM.children], W, X);
 
-  const M = lane(cvM, itemsM, cMineSoft);
-  M.save(); M.globalAlpha = .55; M.strokeStyle = cRef; M.lineWidth = 2; M.setLineDash([2, 5]);
-  if (S.view === "all") { for (const m of mine) strokeContour(M, cR.subarray(m.p.rs.a - j0, m.p.rs.b - j0 + 1), m.p.rs.a, X, Y, step); }
-  else strokeContour(M, cR, j0, X, Y, step);
-  M.restore();
-  M.strokeStyle = cMine; M.lineWidth = 3.5;
-  const mineDots = [];
-  for (const m of mine) {
-    strokeContour(M, m.c, m.p.rs.a, X, Y, step);
-    for (const n of m.p.mst.nuclei) { const f = pairMineToRef(m.p, n.i); mineDots.push([X(f / FPS), Y(valueNear(m.c, f - m.p.rs.a)), n]); }
-  }
-  dots(M, mineDots, cMine);
+    const R = lane(elR.querySelector("canvas"), st.R, cRefSoft, W, X);
+    const pr = part(cR, j0);
+    R.strokeStyle = cRef; R.lineWidth = 3.5; if (pr) strokeContour(R, pr[0], pr[1], X, Y, step);
+    const refDots = [];
+    for (const i of vis) for (const n of REF.stats[i].nuclei) if (inS(n.i)) refDots.push([X(n.i / FPS), Y(valueNear(cR, n.i - j0)), n]);
+    dots(R, refDots, cRef);
+
+    const M = lane(elM.querySelector("canvas"), st.M, cMineSoft, W, X);
+    M.save(); M.globalAlpha = .55; M.strokeStyle = cRef; M.lineWidth = 2; M.setLineDash([2, 5]);
+    if (S.view === "all") { for (const m of mine) { const g2 = part(cR, j0, Math.max(f0, m.p.rs.a), Math.min(f1, m.p.rs.b)); if (g2) strokeContour(M, g2[0], g2[1], X, Y, step); } }
+    else if (pr) strokeContour(M, pr[0], pr[1], X, Y, step);
+    M.restore();
+    M.strokeStyle = cMine; M.lineWidth = 3.5;
+    const mineDots = [];
+    for (const m of mine) {
+      const pm = part(m.c, m.p.rs.a); if (pm) strokeContour(M, pm[0], pm[1], X, Y, step);
+      for (const n of m.p.mst.nuclei) { const f = pairMineToRef(m.p, n.i); if (inS(f)) mineDots.push([X(f / FPS), Y(valueNear(m.c, f - m.p.rs.a)), n]); }
+    }
+    dots(M, mineDots, cMine);
+  });
 }
 function drawAll() { drawCharts(); }
 
@@ -1198,7 +1246,7 @@ function markWords(line, frame) {
 }
 function loop() {
   cancelAnimationFrame(raf);
-  const ph = $("ph-chart"), scroller = $("scroller");
+  const scroller = $("scroller");
   let any = false;
   for (const k of PLAYERS) {
     const a = audios[k];
@@ -1207,24 +1255,28 @@ function loop() {
     if (a.currentTime >= cur.to) { finish(k); continue; }
     let tb = a.currentTime;
     if (k === "mine") { const p = getPair(cur.line); tb = p ? pairMineToRef(p, a.currentTime * FPS) / FPS : null; }
-    if (tb == null) { ph.style.display = "none"; continue; }
+    if (tb == null) { hidePlayhead(); continue; }
     if (k === "ref" && cur.follow && S.view === "line") {
       const i = lineAtTime(tb), s = REF.segs[i];
       if (i !== S.sel && tb * FPS >= s.a && tb * FPS <= s.b) select(i);
     }
     markWords(k !== "mine" ? lineAtTime(tb) : cur.line, tb * FPS);
-    if (geo && tb >= geo.t0 && tb <= geo.t1) {
-      const x = geo.X(tb);
-      ph.style.display = "block"; ph.style.left = x + "px"; ph.style.background = cssVar(k === "ref" ? "--ref" : k === "conv" ? "--conv" : "--mine");
-      if (geo.W > scroller.clientWidth && (x < scroller.scrollLeft + 10 || x > scroller.scrollLeft + scroller.clientWidth - 40)) scroller.scrollLeft = x - scroller.clientWidth * 0.25;
-    } else ph.style.display = "none";
+    const q = geo ? geo.strips.findIndex(st => tb >= st.t0 && tb <= st.t1) : -1;
+    hidePlayhead();
+    if (q >= 0) {
+      const st = geo.strips[q], x = st.X(tb), col = cssVar(k === "ref" ? "--ref" : k === "conv" ? "--conv" : "--mine");
+      for (const lane of [$("strips-ref"), $("strips-mine")]) { const ph = lane.children[q].querySelector(".playhead"); ph.style.display = "block"; ph.style.left = x + "px"; ph.style.background = col; }
+      if (st.W > scroller.clientWidth && (x < scroller.scrollLeft + 10 || x > scroller.scrollLeft + scroller.clientWidth - 40)) scroller.scrollLeft = x - scroller.clientWidth * 0.25;
+    }
   }
-  if (any) raf = requestAnimationFrame(loop); else { ph.style.display = "none"; markWords(null); }
+  if (any) raf = requestAnimationFrame(loop); else { hidePlayhead(); markWords(null); }
 }
+function hidePlayhead() { document.querySelectorAll(".strip .playhead").forEach(el => { el.style.display = "none"; }); }
 $("inner").addEventListener("click", (e) => {
-  if (!REF || !geo || e.target.closest("[data-w]")) return;
-  const r = $("inner").getBoundingClientRect();
-  const t = geo.t0 + (e.clientX - r.left - PADX) / (geo.W - 2 * PADX) * (geo.t1 - geo.t0);
+  const el = e.target.closest(".strip");
+  if (!REF || !geo || !el || e.target.closest("[data-w]")) return;
+  const st = geo.strips[+el.dataset.s], r = el.getBoundingClientRect();
+  const t = st.t0 + (e.clientX - r.left - PADX) / (st.W - 2 * PADX) * (st.t1 - st.t0);
   const i = S.view === "line" ? S.sel : lineAtTime(t), p = e.target.closest(".lane.mine") ? getPair(i) : null;
   if (i !== S.sel) select(i, { keepScroll: true });
   if (p) { const k = Math.max(0, Math.min(p.map.length - 1, Math.round(t * FPS) - p.rs.a)); playTake(i, p.map[k] / FPS, p.ms.b / FPS); return; }
@@ -1289,8 +1341,8 @@ async function startRec(withModel) {
   const ctx = new AC();
   try { await ctx.resume(); } catch (e) {}
   const src = ctx.createMediaStreamSource(stream), proc = ctx.createScriptProcessor(2048, 1, 1);
-  const chunks = [], refDur = (REF.segs[line].b - REF.segs[line].a) / FPS;
-  const maxDur = Math.min(40, Math.max(5, refDur * 2.5 + 2));
+  // speak at your own pace: only a 2.5 s silence after you start (or the button) ends the take; 60 s is a safety cap
+  const chunks = [], SILENCE = 2.5, MAX_TAKE = 60;
   let t = 0, speech = false, lastLoud = 0, floor = 0, floorN = 0;
   proc.onaudioprocess = (ev) => {
     if (rec.state !== "recording") return;
@@ -1303,7 +1355,7 @@ async function startRec(withModel) {
     const th = Math.max((floorN ? floor / floorN : -60) + 14, -52);
     if (t >= 0.35 && db > th) { speech = true; lastLoud = t; }
     rec.level = db; rec.t = t; rec.speech = speech;
-    if ((speech && t - lastLoud > 1.2) || t > maxDur) setTimeout(stopRec, 0);
+    if ((speech && t - lastLoud > SILENCE) || t > MAX_TAKE) setTimeout(stopRec, 0);
   };
   src.connect(proc); proc.connect(ctx.destination);
   Object.assign(rec, { state: "recording", ctx, stream, src, proc, chunks, line, t: 0, level: -90, speech: false });
@@ -1311,7 +1363,7 @@ async function startRec(withModel) {
   const meter = () => {
     if (rec.state !== "recording") { $("lvl").style.width = "0"; return; }
     $("lvl").style.width = Math.max(0, Math.min(100, (rec.level + 60) / 50 * 100)) + "%";
-    recStatus(`● 録音中 ${rec.t.toFixed(1)}秒 ・ ${rec.speech ? "話し終えたら1秒ほど黙ると止まります" : "どうぞ、読んでください"}`, true);
+    recStatus(`● 録音中 ${rec.t.toFixed(1)}秒 ・ ${rec.speech ? "話し終えたら2秒ほど黙るか「停止」で止まります" : "どうぞ、自分のペースで読んでください"}`, true);
     requestAnimationFrame(meter);
   };
   meter();
@@ -1513,19 +1565,36 @@ function lcsMark(exp, got) {
   while (i < n && j < m) { if (exp[i] === got[j]) { okE[i] = okG[j] = true; i++; j++; } else if (L[i + 1][j] >= L[i][j + 1]) i++; else j++; }
   return { okE, okG };
 }
+function lcsPairs(a, b) {
+  const n = a.length, m = b.length, L = Array.from({ length: n + 1 }, () => new Int16Array(m + 1));
+  for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) L[i][j] = a[i] && a[i] === b[j] ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
+  const out = []; let i = 0, j = 0;
+  while (i < n && j < m) { if (a[i] && a[i] === b[j]) { out.push([i, j]); i++; j++; } else if (L[i + 1][j] >= L[i][j + 1]) i++; else j++; }
+  return out;
+}
 async function transcribeTake(i) {
   const tk = takes[i];
   if (!tk || !ASR.ready || ASR.busy || !ASR.model) return;
   ASR.busy = true;
   try {
-    let text = "";
-    await asrRun(ASR.model, [{ audio: tk.samples.slice(0, Math.min(tk.samples.length, 29 * SR)), offset: 0 }], (d) => { if (d.type === "chunk") text = String(d.out.text || "").trim(); });
+    let text = "", gw = [];
+    await asrRun(ASR.model, [{ audio: tk.samples.slice(0, Math.min(tk.samples.length, 29 * SR)), offset: 0 }], (d) => { if (d.type === "chunk") { text = String(d.out.text || "").trim(); gw = parseWords(d.out, 0); } });
     if (takes[i] !== tk) return;
     tk.heard = text;
     const exp = normWords(scriptLines()[i] || ""), got = normWords(text);
     const { okE, okG } = lcsMark(exp, got);
     tk.heardOk = okG; tk.missing = exp.filter((w, k) => !okE[k]);
-    if (i === S.sel) renderRecorder();
+    // pin each recognised word of your take to the same script word
+    const key = (t) => String(t).toLowerCase().replace(/[^a-z0-9']/g, "");
+    const words = wordTiming(i);
+    if (words && gw.length) {
+      tk.anchors = lcsPairs(words.map(w => key(w.text)), gw.map(w => key(w.text)))
+        .map(([k, j]) => ({ k, ma: Math.round(gw[j].a * FPS), mb: Math.round(gw[j].b * FPS) }));
+      const p = getPair(i);
+      if (p && !isNaN(p.cmp.corr)) tk.history[tk.history.length - 1] = Math.round(p.cmp.corr * 100);
+      renderLines();
+      if (i === S.sel) renderLineDetail();
+    } else if (i === S.sel) renderRecorder();
   } catch (e) { /* recognition of your take is optional */ }
   finally { ASR.busy = false; }
 }
