@@ -318,15 +318,6 @@ dialog.sheet::backdrop{background:rgba(10,16,22,.45)}
       <div class="seg" id="zoom"><button type="button" data-v="fit" aria-pressed="true">画面幅</button><button type="button" data-v="150" aria-pressed="false">小</button><button type="button" data-v="300" aria-pressed="false">中</button><button type="button" data-v="500" aria-pressed="false">大</button></div>
     </div>
     <div class="set-sec">解析</div>
-    <div class="set-grp"><label class="lbl" for="pause">行の区切り</label>
-      <select class="sel" id="pause">
-        <option value="auto" selected>自動（文字起こしの文に合わせる）</option>
-        <option value="0.2">短いポーズでも区切る（0.2秒）</option>
-        <option value="0.35">普通（0.35秒）</option>
-        <option value="0.6">長いポーズだけ（0.6秒）</option>
-        <option value="1">かなり長いポーズだけ（1秒）</option>
-      </select>
-    </div>
     <div class="set-grp"><span class="lbl">時間の合わせ方</span>
       <div class="seg" id="align"><button type="button" data-v="dtw" aria-pressed="true">音節で揃える</button><button type="button" data-v="linear" aria-pressed="false">長さだけ揃える</button></div>
     </div>
@@ -357,7 +348,7 @@ const SR = 16000, HOP = 160, WIN = 640, FPS = SR / HOP, MAX_SEC = 180;
 const $ = (id) => document.getElementById(id);
 const audios = { ref: new Audio(), mine: new Audio(), conv: new Audio() };
 const PLAYERS = ["ref", "mine", "conv"];
-const S = { sel: 0, view: "line", zoom: "fit", align: "dtw", pause: "auto", speed: 1, wordmode: "audio", modelVoice: "orig", key: null, formant: null };
+const S = { sel: 0, view: "line", zoom: "fit", align: "dtw", speed: 1, wordmode: "audio", modelVoice: "orig", key: null, formant: null };
 let REF = null;
 let takes = {};
 const pairCache = new Map(), wordCache = new Map();
@@ -812,20 +803,31 @@ function compare(p) {
   return { corr, hit, refStrongN: refStrong.length };
 }
 function segsFromTranscript() {
-  const T = REF.transcript, N = REF.an.N;
-  return T.map((l, i) => {
-    const first = l.words[0].a, last = l.words[l.words.length - 1].b;
-    let a = Math.max(0, first - 12), b = Math.min(N - 1, last + 12);
-    if (i) a = Math.max(a, Math.round((T[i - 1].words[T[i - 1].words.length - 1].b + first) / 2));
-    if (i < T.length - 1) b = Math.min(b, Math.round((last + T[i + 1].words[0].a) / 2) - 1);
+  // Whisper's word times often end before the voice does (final consonant, falling tone), so each sentence is
+  // grown to where the sound actually fades, then padded; neighbours split any shared gap at its middle.
+  const T = REF.transcript, an = REF.an, N = an.N, th = an.maxEnv - 32, LEAD = 10, TAIL = 25;
+  const first = T.map(l => l.words[0].a), last = T.map(l => l.words[l.words.length - 1].b);
+  const S0 = [], E = [];
+  T.forEach((l, i) => {
+    const lo = i ? last[i - 1] : 0, hi = i < T.length - 1 ? first[i + 1] - 3 : N - 1;
+    let e = Math.max(0, Math.min(N - 1, last[i], hi));
+    while (e < hi && an.env[e + 1] > th) e++;
+    let s0 = Math.min(N - 1, Math.max(0, first[i], lo));
+    while (s0 > lo && an.env[s0 - 1] > th) s0--;
+    S0.push(s0); E.push(Math.max(e, s0));
+  });
+  return T.map((_, i) => {
+    let a = Math.max(0, S0[i] - LEAD), b = Math.min(N - 1, E[i] + TAIL);
+    if (i && a <= E[i - 1] + TAIL) a = Math.max(E[i - 1] + 1, Math.round((E[i - 1] + S0[i]) / 2) + 1);
+    if (i < T.length - 1 && b >= S0[i + 1] - LEAD) b = Math.max(E[i], Math.round((E[i] + S0[i + 1]) / 2));
     if (b < a + 6) b = Math.min(N - 1, a + 6);
     return { a, b };
   });
 }
 function resegment() {
   if (!REF) return;
-  const useT = REF.transcript && S.pause === "auto" && scriptLines().length === REF.transcript.length;
-  REF.segs = useT ? segsFromTranscript() : S.pause === "auto" ? autoSegs(REF.an, scriptLines().length) : segment(REF.an, +S.pause);
+  const useT = REF.transcript && scriptLines().length === REF.transcript.length;
+  REF.segs = useT ? segsFromTranscript() : autoSegs(REF.an, scriptLines().length);
   REF.stats = REF.segs.map(s => segStats(REF.an, s));
   pairCache.clear(); wordCache.clear();
 }
@@ -851,7 +853,6 @@ function renderLines() {
   }).join("");
   const done = Object.keys(takes).filter(k => +k < n).length;
   let note = `${n}行 ・ 録音済み ${done}行`;
-  if (lines.length && lines.length !== n) note += ` ・ 文は${lines.length}つです。区切りがずれる場合は設定の「行の区切り」を変えてください`;
   $("lines-note").textContent = note;
   scrollCardIntoView();
 }
@@ -1438,17 +1439,18 @@ function parseWords(out, offset) {
   return res;
 }
 function buildLines(words) {
+  // one line per sentence: split only after . ? ! (not at pauses or commas); 80 words is a safety cap for unpunctuated output
   const lines = []; let cur = [];
   const flush = () => { if (cur.length) lines.push({ text: cur.map(w => w.text).join(" "), words: cur.map(w => ({ text: w.text, a: Math.round(w.a * FPS), b: Math.round(w.b * FPS) })) }); cur = []; };
   for (const w of words) {
-    if (cur.length && w.a - cur[cur.length - 1].b > 0.9) flush();
     cur.push(w);
     const endS = /[.?!]["')\]]*$/.test(w.text) && !/^(mr|mrs|ms|dr|st|vs|etc|e\.g|i\.e|u\.s)\.$/i.test(w.text);
-    if (endS || (cur[cur.length - 1].b - cur[0].a > 15 && /[,;:]$/.test(w.text)) || cur.length >= 40) flush();
+    if (endS || cur.length >= 80) flush();
   }
   flush();
   return lines;
 }
+
 async function transcribeRef() {
   if (!REF || ASR.busy) return;
   if (IN_HOST && !window.__IL_MOCK_ASR) { $("asr-host").hidden = false; asrStatus(""); return; }
@@ -1488,7 +1490,7 @@ async function transcribeRef() {
   takes = {};
   REF.transcript = lines;
   SCRIPT = lines.map(l => l.text).join("\n");
-  S.pause = "auto"; $("pause").value = "auto"; S.sel = 0;
+  S.sel = 0;
   resegment(); refreshAll();
   asrStatus(`文字起こしが終わりました：${lines.length}行・${words.length}語。単語の位置も音声に合わせてあります。`);
 }
@@ -1755,7 +1757,6 @@ seg("zoom", (v) => {
   S.zoom = v; drawCharts();
   if (geo) sc.scrollLeft = Math.max(0, geo.X(center) - sc.clientWidth / 2);
 });
-$("pause").addEventListener("change", (e) => { S.pause = e.target.value; resegment(); refreshAll(); });
 const dlg = $("settings");
 $("open-settings").addEventListener("click", () => dlg.showModal());
 dlg.addEventListener("click", (e) => { if (e.target === dlg) dlg.close(); });
