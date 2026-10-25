@@ -264,11 +264,11 @@ dialog.sheet::backdrop{background:rgba(10,16,22,.45)}
       <div class="practice">
         <div class="pr-btns">
           <button class="btn tone ref-c" id="lp-ref" type="button"><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg>お手本</button>
-          <button class="btn recbtn" id="rec-model" type="button" title="お手本を聞いてから録音します"><span class="dot"></span>録音</button>
+          <button class="btn recbtn" id="rec-model" type="button"><span class="dot"></span>録音</button>
           <button class="btn tone mine-c" id="lp-mine" type="button"><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg>あなたの録音</button>
         </div>
         <div class="meter" id="lvl-meter" aria-hidden="true" hidden><span id="lvl"></span></div>
-        <div class="rec-status" id="rec-status" role="status">「録音」を押すとお手本が流れ、続けて録音が始まります。話し終えて1秒ほど黙ると自動で止まります。</div>
+        <div class="rec-status" id="rec-status" role="status">「録音」を押すとすぐに録音が始まります。話し終えて1秒ほど黙ると自動で止まります。</div>
         <div class="err" id="mic-err" hidden></div>
         <div class="hist" id="hist">この行はまだ録音していません。</div>
       </div>
@@ -903,7 +903,7 @@ document.addEventListener("keydown", (e) => {
   if ((e.target.closest && e.target.closest("input,textarea,select")) || $("settings").open) return;
   if (e.key === "ArrowLeft") { e.preventDefault(); select(S.sel - 1); }
   else if (e.key === "ArrowRight") { e.preventDefault(); select(S.sel + 1); }
-  else if (e.key === "r" || e.key === "R") { e.preventDefault(); rec.state === "recording" ? stopRec() : startRec(true); }
+  else if (e.key === "r" || e.key === "R") { e.preventDefault(); rec.state === "recording" ? stopRec() : startRec(false); }
 });
 
 /* ---------- words sized by stress ---------- */
@@ -1332,7 +1332,7 @@ async function stopRec() {
   rec.state = "idle"; recUI();
   setTake(line, samples, "マイク録音");
 }
-$("rec-model").addEventListener("click", () => rec.state === "recording" ? stopRec() : startRec(true));
+$("rec-model").addEventListener("click", () => rec.state === "recording" ? stopRec() : startRec(false));
 function setTake(i, samples, label, silent) {
   const an = analyze(samples);
   if (!an.rawNuclei.length) { recStatus("声がほとんど検出できませんでした。マイクに近づいて、もう一度どうぞ。"); return; }
@@ -1714,7 +1714,7 @@ async function loadRef(file) {
   SCRIPT = "";
   S.sel = 0;
   resegment(); setStatus("");
-  recStatus("行を選んで「録音」を押してください。お手本が流れたあと、すぐに録音が始まります。");
+  recStatus("行を選んで「録音」を押してください。すぐに録音が始まります。");
   refreshAll();
   if (IN_HOST && !window.__IL_MOCK_ASR) { $("asr-host").hidden = false; asrStatus(""); }
   else transcribeRef();
