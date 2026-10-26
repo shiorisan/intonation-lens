@@ -17,7 +17,7 @@
   --display:"Bricolage Grotesque","IBM Plex Sans JP",system-ui,sans-serif;
   --body:"IBM Plex Sans JP","Hiragino Sans","Yu Gothic",system-ui,sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
-  --wscale:1;
+  --wscale:.85; --wmin:13px;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
@@ -136,9 +136,9 @@ select.sel{border:1px solid var(--line);background:var(--surface);border-radius:
 .strip + .strip{margin-top:6px}
 .strip canvas{display:block}
 .wrow.measure{position:absolute;left:-9999px;top:0;visibility:hidden;pointer-events:none}
-.wrow{display:flex;align-items:baseline;white-space:nowrap;min-height:58px;padding:0 0 6px}
+.wrow{display:flex;align-items:baseline;white-space:nowrap;min-height:46px;padding:0 0 4px}
 .wrow.ref{--c:var(--ref);--c-soft:var(--ref-soft)} .wrow.mine{--c:var(--mine);--c-soft:var(--mine-soft)}
-.wbtn{flex:none;border:0;background:none;padding:2px 2px;border-radius:6px;cursor:pointer;font-family:var(--display);line-height:1.15;color:var(--ink);display:inline-flex;align-items:baseline}
+.wbtn{flex:none;border:0;background:none;padding:2px 1px;border-radius:6px;cursor:pointer;font-family:var(--display);line-height:1.15;color:var(--ink);display:inline-flex;align-items:baseline}
 .wbtn.now{background:var(--c-soft)}
 @media (hover:hover){.wbtn:hover{background:var(--surface-2)}}
 .syl{display:inline-block}
@@ -194,10 +194,10 @@ dialog.sheet::backdrop{background:rgba(10,16,22,.45)}
 /* phones */
 .mbar{display:none}
 @media (max-width:640px){
-  :root{--wscale:.7}
+  :root{--wscale:.48;--wmin:11px}
   body{padding-block:14px calc(84px + env(safe-area-inset-bottom))}
   .wrap{gap:14px}
-  .panel{padding:12px;border-radius:12px;gap:12px}
+  .panel{padding:12px 8px;border-radius:12px;gap:12px}
   .btn{min-height:44px;padding:8px 14px;justify-content:center}
   .iconbtn{width:44px;height:44px}
   select.sel{min-height:44px;font-size:16px}
@@ -208,7 +208,8 @@ dialog.sheet::backdrop{background:rgba(10,16,22,.45)}
   .source .row{flex:1 1 100%}
   .source .row .btn,.pr-btns .btn{flex:1 1 auto;padding-inline:10px}
   .line-card{width:min(72vw,240px)}
-  .wrow{min-height:50px}
+  .wrow{min-height:30px;padding-bottom:2px}
+  .strip + .strip{margin-top:2px}
   .metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
   .metric{padding:12px;gap:6px}
   .metric .top{flex-wrap:wrap;gap:4px}
@@ -935,7 +936,7 @@ document.addEventListener("keydown", (e) => {
 function sylHTML(s, big) {
   const size = big ? 17 + 27 * s.norm : 11 + 13 * s.norm;
   const w = s.strong ? 800 : Math.round((400 + 200 * s.norm) / 100) * 100;
-  return `<span class="syl ${s.strong ? "s" : "w"}" style="font-size:calc(${size.toFixed(1)}px * var(--wscale));font-weight:${w}">${esc(s.t)}</span>`;
+  return `<span class="syl ${s.strong ? "s" : "w"}" style="font-size:max(var(--wmin), calc(${size.toFixed(1)}px * var(--wscale)));font-weight:${w}">${esc(s.t)}</span>`;
 }
 function onWordClick(e) {
   const b = e.target.closest("[data-w]"); if (!b) return;
@@ -1004,7 +1005,7 @@ function renderMetrics() {
 /* ---------- prosody view: per speaker, a smooth intonation contour drawn directly over stress-sized words ---------- */
 // Modelled on the interlinear tonetic stave used to teach English intonation: the pitch line runs above the text,
 // and every syllable is a dot on that line (big = stressed).
-const PADX = 14, BRIDGE = 30; // unvoiced gaps up to 0.3 s are bridged so a phrase reads as one connected curve
+let PADX = 14; const BRIDGE = 30; // unvoiced gaps up to 0.3 s are bridged so a phrase reads as one connected curve
 function setupCanvas(cv, w, h) {
   let dpr = window.devicePixelRatio || 1;
   dpr = Math.min(dpr, 32000 / Math.max(1, w));
@@ -1063,6 +1064,7 @@ function measureWidths(items, who) {
 }
 function drawCharts() {
   const scroller = $("scroller"), clientW = Math.max(200, scroller.clientWidth), phone = innerWidth <= 640;
+  PADX = phone ? 7 : 14;
   const laneR = $("strips-ref"), laneM = $("strips-mine");
   const cRef = cssVar("--ref"), cMine = cssVar("--mine"), cRefSoft = cssVar("--ref-soft"), cMineSoft = cssVar("--mine-soft"), surface = cssVar("--surface"), band = cssVar("--band");
   if (!REF) { laneR.innerHTML = laneM.innerHTML = ""; $("inner").style.width = ""; geo = null; return; }
@@ -1080,7 +1082,7 @@ function drawCharts() {
   const avail = clientW - 2 * PADX;
   let strips;
   if (S.view === "line" && S.zoom === "fit" && itemsR.length) {
-    const need = itemsR.map((x, k) => Math.max(x.w, itemsM[k] ? itemsM[k].w : 0) * 1.08 + 4);
+    const need = itemsR.map((x, k) => Math.max(x.w, itemsM[k] ? itemsM[k].w : 0) * 1.03 + 3);
     const total = need.reduce((a, b) => a + b, 0), n = Math.max(1, Math.ceil(total / avail)), target = total / n;
     const groups = []; let cur = [], sum = 0;
     need.forEach((w, k) => {
@@ -1122,13 +1124,13 @@ function drawCharts() {
   for (const m of mine) for (const v of m.c) if (!isNaN(v)) vals.push(v);
   let lo = vals.length ? pct(vals, .02) : -4, hi = vals.length ? pct(vals, .98) : 4;
   if (hi - lo < 8) { const m = (hi + lo) / 2; lo = m - 4; hi = m + 4; }
-  const CH = phone ? (strips.length > 1 ? 80 : 96) : 124, top = 14, bot = CH - 12;
+  const CH = phone ? (strips.length > 1 ? 56 : 72) : (strips.length > 1 ? 92 : 112), top = 10, bot = CH - 8;
   const Y = (s) => bot - (Math.max(lo - 1.5, Math.min(hi + 1.5, s)) - lo) / (hi - lo) * (bot - top);
 
   const place = (items, btns, W, X) => {
     const L = items.map(x => X((x.a + x.b) / 2 / FPS) - x.w / 2);
-    for (let k = 0; k < L.length; k++) L[k] = Math.max(L[k], k ? L[k - 1] + items[k - 1].w + 4 : 2);
-    for (let k = L.length - 1; k >= 0; k--) L[k] = Math.min(L[k], k < L.length - 1 ? L[k + 1] - items[k].w - 4 : W - items[k].w - 2);
+    for (let k = 0; k < L.length; k++) L[k] = Math.max(L[k], k ? L[k - 1] + items[k - 1].w + 3 : 2);
+    for (let k = L.length - 1; k >= 0; k--) L[k] = Math.min(L[k], k < L.length - 1 ? L[k + 1] - items[k].w - 3 : W - items[k].w - 2);
     let prev = 0;
     btns.forEach((b, k) => { b.style.marginLeft = (L[k] - prev).toFixed(1) + "px"; prev = L[k] + items[k].w; });
   };
