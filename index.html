@@ -143,6 +143,7 @@ select.sel{border:1px solid var(--line);background:var(--surface);border-radius:
 .wrow,.wbtn{touch-action:pan-y}
 .wbtn{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .wbtn.sel{background:var(--c-soft);box-shadow:inset 0 -2px 0 var(--c)}
+.gloss{position:absolute;z-index:3;pointer-events:none;background:var(--ink);color:var(--bg);font-size:12px;font-weight:500;line-height:1.4;padding:3px 8px;border-radius:6px;white-space:nowrap;max-width:min(260px,92%);overflow:hidden;text-overflow:ellipsis;box-shadow:0 2px 8px rgba(0,0,0,.18)}
 @media (hover:hover){.wbtn:hover{background:var(--surface-2)}}
 .syl{display:inline-block}
 .syl.s{color:var(--c);font-weight:800}
@@ -331,7 +332,7 @@ dialog.sheet::backdrop{background:rgba(10,16,22,.45)}
       </select>
       <div class="row"><button class="btn" id="asr-run" type="button">この精度で文字起こしし直す</button></div>
     </div>
-    <p class="privacy">音声はこのブラウザ内だけで解析され、外部には送信されません。</p>
+    <p class="privacy">音声はこのブラウザ内だけで解析され、外部には送信されません。単語をタップしたときの意味は翻訳サービス（MyMemory）から取得します（送るのはその単語だけです）。</p>
   </form>
 </dialog>
 
@@ -960,6 +961,42 @@ function speakWord(text) {
   } catch (err) { setStatus("このブラウザでは単語の読み上げを使えません。"); }
 }
 
+/* ---------- the meaning, shown small just above the tapped word (looked up after the sound has started) ---------- */
+const GLOSS = new Map();
+let glossTimer = 0;
+function glossFor(word) {
+  if (!GLOSS.has(word)) {
+    const job = fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(word)}&langpair=en|ja`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { const t = String((d && d.responseData && d.responseData.translatedText) || "").trim(); return t && t.toLowerCase() !== word && !/MYMEMORY|INVALID|QUERY LENGTH/i.test(t) ? t : ""; })
+      .catch(() => null);
+    GLOSS.set(word, job);
+    job.then(t => { if (t === null) GLOSS.delete(word); }); // retry later after a network failure
+  }
+  return GLOSS.get(word);
+}
+function hideGloss() { clearTimeout(glossTimer); document.querySelectorAll(".gloss").forEach(g => g.remove()); }
+async function showGloss(line, k, who, text) {
+  hideGloss();
+  const word = String(text).toLowerCase().replace(/[\u2018\u2019]/g, "'").replace(/^[^a-z]+|[^a-z]+$/g, "");
+  const btn = document.querySelector(`#strips-${who} .wbtn[data-line="${line}"][data-w="${k}"]`);
+  if (!word || !btn) return;
+  const strip = btn.closest(".strip"), g = document.createElement("div");
+  g.className = "gloss"; g.setAttribute("role", "status"); g.textContent = "…";
+  strip.appendChild(g);
+  const place = () => {
+    const x = btn.offsetLeft + btn.offsetWidth / 2, w = g.offsetWidth;
+    g.style.left = Math.max(2, Math.min(strip.clientWidth - w - 2, x - w / 2)) + "px";
+    g.style.top = Math.max(0, btn.offsetTop - g.offsetHeight - 2) + "px";
+  };
+  place();
+  const t = await glossFor(word);
+  if (!g.isConnected) return;
+  g.textContent = t || (t === null ? "意味を取得できませんでした" : "意味が見つかりませんでした");
+  place();
+  glossTimer = setTimeout(hideGloss, 5000);
+}
+
 /* ---------- drag across words: play that stretch of the uploaded model ---------- */
 const drag = { on: false, moved: false, suppress: false };
 function clearSel() { document.querySelectorAll(".wbtn.sel").forEach(b => b.classList.remove("sel")); }
@@ -972,7 +1009,7 @@ $("inner").addEventListener("pointerdown", (e) => {
   const b = e.target.closest(".wbtn"); if (!b || e.button > 0) return;
   try { b.releasePointerCapture(e.pointerId); } catch (x) {}
   Object.assign(drag, { on: true, moved: false, line: +b.dataset.line, k0: +b.dataset.w, k1: +b.dataset.w });
-  clearSel();
+  clearSel(); hideGloss();
 });
 document.addEventListener("pointermove", (e) => {
   if (!drag.on) return;
@@ -996,9 +1033,10 @@ document.addEventListener("pointerup", () => {
 document.addEventListener("pointercancel", () => { if (drag.on) { drag.on = false; clearSel(); } });
 $("inner").addEventListener("click", (e) => {
   const b = e.target.closest(".wbtn"); if (!b || drag.suppress) return;
-  const line = +b.dataset.line, words = wordTiming(line), w = words && words[+b.dataset.w];
+  const line = +b.dataset.line, k = +b.dataset.w, who = b.dataset.who, words = wordTiming(line), w = words && words[k];
   if (w) speakWord(w.clean || w.text);
   if (line !== S.sel) select(line, { keepScroll: true });
+  if (w) showGloss(line, k, who, w.clean || w.text);
 });
 
 /* ---------- metrics ---------- */
@@ -1090,7 +1128,7 @@ function wordItems(i, who) {
   if (who === "mine" && !mw) return [];
   return words.map((w, k) => {
     const syl = who === "mine" ? mw[k].syl.map((s, q) => Object.assign({}, s, { a: w.syl[q].a, b: w.syl[q].b })) : w.syl;
-    const tip = "：タップで発音、ドラッグでその範囲をお手本の音声で再生";
+    const tip = "：タップで発音と意味、ドラッグでその範囲をお手本の音声で再生";
     return { i, a: w.a, b: w.b, syl, html: `<button type="button" class="wbtn" data-line="${i}" data-w="${k}" data-who="${who}" title="${esc(w.clean)}${tip}">${syl.map(s => sylHTML(s, true)).join("")}</button>` };
   });
 }
