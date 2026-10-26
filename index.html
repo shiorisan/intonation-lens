@@ -828,8 +828,8 @@ function compare(p) {
   return { corr, hit, refStrongN: refStrong.length };
 }
 function segsFromTranscript() {
-  // Whisper's word times often end before the voice does (final consonant, falling tone), so each sentence is
-  // grown to where the sound actually fades, then padded; neighbours split any shared gap at its middle.
+  // Whisper's word times often end before the voice does (final consonant, falling tone) or stretch over a pause,
+  // so each line is fitted to where its sound actually starts and fades, then padded; neighbours split any shared gap at its middle.
   const T = REF.transcript, an = REF.an, N = an.N, th = an.maxEnv - 32, LEAD = 10, TAIL = 25;
   const first = T.map(l => l.words[0].a), last = T.map(l => l.words[l.words.length - 1].b);
   const S0 = [], E = [];
@@ -839,6 +839,9 @@ function segsFromTranscript() {
     while (e < hi && an.env[e + 1] > th) e++;
     let s0 = Math.min(N - 1, Math.max(0, first[i], lo));
     while (s0 > lo && an.env[s0 - 1] > th) s0--;
+    // timestamps stretched over a pause: trim the silent part back off both ends
+    while (e > s0 && an.env[e] <= th) e--;
+    while (s0 < e && an.env[s0] <= th) s0++;
     S0.push(s0); E.push(Math.max(e, s0));
   });
   return T.map((_, i) => {
@@ -1492,14 +1495,24 @@ function parseWords(out, offset) {
   }
   return res;
 }
-function buildLines(words) {
-  // one line per sentence: split only after . ? ! (not at pauses or commas); 80 words is a safety cap for unpunctuated output
+function buildLines(words, an) {
+  // a line ends after . ? ! or a comma, or wherever the speaker is silent for about 1 s or more.
+  // Pauses are found in the audio (word timestamps can stretch across them); a pause splits before the first word still sounding after it.
+  const th = an.maxEnv - 32, MIN = Math.round(0.9 * FPS), pauses = []; // ~0.9 s of smoothed quiet ≈ 1 s of real silence
+  for (let f = 0; f < an.N;) {
+    if (an.env[f] > th) { f++; continue; }
+    let e = f; while (e < an.N && an.env[e] <= th) e++;
+    if (e - f >= MIN) pauses.push([f / FPS, e / FPS]);
+    f = e;
+  }
   const lines = []; let cur = [];
   const flush = () => { if (cur.length) lines.push({ text: cur.map(w => w.text).join(" "), words: cur.map(w => ({ text: w.text, a: Math.round(w.a * FPS), b: Math.round(w.b * FPS) })) }); cur = []; };
   for (const w of words) {
+    const prev = cur[cur.length - 1];
+    if (prev && (w.a - prev.b >= 1.0 || pauses.some(([ps, pe]) => ps >= prev.a && pe <= w.b))) flush();
     cur.push(w);
     const endS = /[.?!]["')\]]*$/.test(w.text) && !/^(mr|mrs|ms|dr|st|vs|etc|e\.g|i\.e|u\.s)\.$/i.test(w.text);
-    if (endS || cur.length >= 80) flush();
+    if (endS || /,["')\]]*$/.test(w.text) || cur.length >= 80) flush();
   }
   flush();
   return lines;
@@ -1538,7 +1551,7 @@ async function transcribeRef() {
   } catch (e) { asrStatus(asrErrorText(e)); asrBar(0); asrBusy(false); return; }
   asrBar(1); asrBusy(false);
   words.sort((x, y) => x.a - y.a);
-  const lines = buildLines(words);
+  const lines = buildLines(words, REF.an);
   if (!lines.length) { asrStatus("言葉を聞き取れませんでした。英語の音声か、雑音が多すぎないか確認してください。"); return; }
   for (const k in takes) URL.revokeObjectURL(takes[k].url);
   takes = {};
