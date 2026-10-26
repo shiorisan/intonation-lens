@@ -190,16 +190,6 @@ dialog.sheet::backdrop{background:rgba(10,16,22,.45)}
 .set-grp select.sel{width:100%}
 .set-sec{font-size:11px;font-weight:700;color:var(--ink-3);letter-spacing:.08em;border-top:1px solid var(--line);padding-top:12px;margin-bottom:-6px}
 .privacy{font-size:12px;color:var(--ink-3)}
-dialog.wsheet{width:min(460px,calc(100vw - 32px))}
-.wsheet .sheet-in{gap:12px}
-.ws-word{font-family:var(--display);font-size:28px;font-weight:800;letter-spacing:-.01em}
-.ws-phon{font-family:var(--mono);font-size:14px;color:var(--ink-2);margin-top:-8px}
-.ws-phon:empty{display:none}
-.ws-ja{font-size:17px;font-weight:700;line-height:1.5}
-.ws-ja:empty{display:none}
-.ws-defs{margin:0;padding-left:1.3em;display:flex;flex-direction:column;gap:6px;font-size:14px;color:var(--ink-2);line-height:1.55}
-.ws-defs:empty{display:none}
-.ws-defs i{font-style:normal;font-size:11px;color:var(--ink-3);border:1px solid var(--line);border-radius:4px;padding:0 4px;margin-right:6px;white-space:nowrap}
 
 @media (hover:none){.kbd-hint{display:none}}
 @media (prefers-reduced-motion: reduce){*{transition:none!important}.recording .dot{animation:none}}
@@ -341,22 +331,7 @@ dialog.wsheet{width:min(460px,calc(100vw - 32px))}
       </select>
       <div class="row"><button class="btn" id="asr-run" type="button">この精度で文字起こしし直す</button></div>
     </div>
-    <p class="privacy">音声はこのブラウザ内だけで解析され、外部には送信されません。単語をタップしたときの発音と意味は、外部の辞書サービス（Google・Free Dictionary・MyMemory）から取得します（送るのはその単語だけです）。</p>
-  </form>
-</dialog>
-
-<dialog class="sheet wsheet" id="word-sheet" aria-labelledby="ws-word">
-  <form method="dialog" class="sheet-in">
-    <div class="sheet-head"><h2 class="ws-word" id="ws-word">—</h2><button class="iconbtn" type="submit" aria-label="閉じる"><svg viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div>
-    <div class="ws-phon" id="ws-phon"></div>
-    <div class="row">
-      <button class="btn solid ref-c" id="ws-us" type="button"><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg>発音（米）</button>
-      <button class="btn" id="ws-uk" type="button"><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg>英</button>
-      <button class="btn tone ref-c" id="ws-model" type="button"><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg>お手本の音声</button>
-      <button class="btn tone mine-c" id="ws-mine" type="button"><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg>あなたの録音</button>
-    </div>
-    <div class="ws-ja" id="ws-ja"></div>
-    <ol class="ws-defs" id="ws-defs"></ol>
+    <p class="privacy">音声はこのブラウザ内だけで解析され、外部には送信されません。</p>
   </form>
 </dialog>
 
@@ -373,7 +348,7 @@ dialog.wsheet{width:min(460px,calc(100vw - 32px))}
 "use strict";
 const SR = 16000, HOP = 160, WIN = 640, FPS = SR / HOP, MAX_SEC = 180;
 const $ = (id) => document.getElementById(id);
-const audios = { ref: new Audio(), mine: new Audio(), conv: new Audio() }, dictAudio = new Audio();
+const audios = { ref: new Audio(), mine: new Audio(), conv: new Audio() };
 const PLAYERS = ["ref", "mine", "conv"];
 const S = { sel: 0, view: "line", zoom: "fit", align: "dtw", speed: 1, modelVoice: "orig", key: null, formant: null };
 let REF = null;
@@ -954,7 +929,7 @@ document.addEventListener("focusout", () => document.body.classList.remove("typi
 $("prev").addEventListener("click", () => select(S.sel - 1));
 $("next").addEventListener("click", () => select(S.sel + 1));
 document.addEventListener("keydown", (e) => {
-  if ((e.target.closest && e.target.closest("input,textarea,select")) || $("settings").open || $("word-sheet").open) return;
+  if ((e.target.closest && e.target.closest("input,textarea,select")) || $("settings").open) return;
   if (e.key === "ArrowLeft") { e.preventDefault(); select(S.sel - 1); }
   else if (e.key === "ArrowRight") { e.preventDefault(); select(S.sel + 1); }
   else if (e.key === "r" || e.key === "R") { e.preventDefault(); rec.state === "recording" ? stopRec() : startRec(false); }
@@ -966,89 +941,24 @@ function sylHTML(s, big) {
   const w = s.strong ? 800 : Math.round((400 + 200 * s.norm) / 100) * 100;
   return `<span class="syl ${s.strong ? "s" : "w"}" style="font-size:max(var(--wmin), calc(${size.toFixed(1)}px * var(--wscale)));font-weight:${w}">${esc(s.t)}</span>`;
 }
-function playWord(i, k, who) {
-  const words = wordTiming(i); if (!words || !words[k]) return;
-  const w = words[k];
-  if (who === "mine") {
-    const mw = mineWordStrengths(i, words); if (!mw) return;
-    playTake(i, mw[k].a / FPS - 0.04, mw[k].b / FPS + 0.05);
-    return;
-  }
-  playModelRange(Math.max(0, w.a / FPS - 0.04), w.b / FPS + 0.05, null, i, "orig");
+/* ---------- tap a word: say it with the browser's English voice ---------- */
+// speak() must run inside the tap itself — phones (iOS Safari especially) silently block speech started after any await
+let enVoice = null;
+function pickVoice() {
+  try {
+    const vs = speechSynthesis.getVoices().filter(v => /^en[-_]US/i.test(v.lang));
+    enVoice = vs.find(v => /Samantha|Google US English|Aria|Jenny|Natural/i.test(v.name)) || vs.find(v => v.localService) || vs[0] || null;
+  } catch (e) {}
 }
-
-/* ---------- word card: dictionary pronunciation (as in Google search) + meaning ---------- */
-const DICT = new Map();
-const POS_JA = { noun: "名詞", verb: "動詞", adjective: "形容詞", adverb: "副詞", pronoun: "代名詞", preposition: "前置詞", conjunction: "接続詞", interjection: "間投詞", determiner: "限定詞", article: "冠詞", exclamation: "感嘆詞", numeral: "数詞" };
-function dictKey(t) { return String(t).toLowerCase().replace(/[‘’]/g, "'").replace(/^[^a-z]+|[^a-z]+$/g, ""); }
-function tryPlay(url) {
-  return new Promise((res, rej) => {
-    const t = setTimeout(() => rej(new Error("timeout")), 5000);
-    dictAudio.onerror = () => { clearTimeout(t); rej(new Error("load")); };
-    dictAudio.src = url; dictAudio.playbackRate = 1;
-    dictAudio.play().then(() => { clearTimeout(t); res(); }, (e) => { clearTimeout(t); rej(e); });
-  });
-}
-function lookup(word) {
-  if (DICT.has(word)) return DICT.get(word);
-  const job = (async () => {
-    const out = { phon: "", audio: [], defs: [], ja: "" };
-    const q = encodeURIComponent(word);
-    const [en, ja] = await Promise.allSettled([
-      fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${q}`).then(r => r.ok ? r.json() : null),
-      fetch(`https://api.mymemory.translated.net/get?q=${q}&langpair=en|ja`).then(r => r.ok ? r.json() : null)
-    ]);
-    if (en.status === "fulfilled" && Array.isArray(en.value)) {
-      for (const e of en.value) {
-        if (!out.phon && e.phonetic) out.phon = e.phonetic;
-        for (const ph of e.phonetics || []) { if (!out.phon && ph.text) out.phon = ph.text; if (ph.audio) out.audio.push(ph.audio); }
-        for (const m of e.meanings || []) for (const d of (m.definitions || []).slice(0, 2)) if (out.defs.length < 4) out.defs.push({ pos: m.partOfSpeech, text: d.definition });
-      }
-    }
-    if (ja.status === "fulfilled" && ja.value && ja.value.responseData) {
-      const t = String(ja.value.responseData.translatedText || "").trim();
-      if (t && t.toLowerCase() !== word && !/MYMEMORY|INVALID|QUERY LENGTH/i.test(t)) out.ja = t;
-    }
-    out.failed = en.status === "rejected" && ja.status === "rejected";
-    return out;
-  })();
-  DICT.set(word, job);
-  job.then(d => { if (d.failed) DICT.delete(word); });
-  return job;
-}
-// Google search plays Oxford recordings from gstatic; fall back to Free Dictionary audio, then the browser's voice
-async function sayWord(word, accent) {
+try { pickVoice(); speechSynthesis.addEventListener("voiceschanged", pickVoice); } catch (e) {}
+function speakWord(text) {
   stopAll();
-  try { await tryPlay(`https://ssl.gstatic.com/dictionary/static/sounds/oxford/${encodeURIComponent(word)}--_${accent}_1.mp3`); return; } catch (e) {}
-  const d = await lookup(word), want = accent === "gb" ? /-(uk|gb)\.mp3/ : /-us\.mp3/;
-  for (const url of d.audio.filter(u => want.test(u)).concat(d.audio.filter(u => !want.test(u)))) {
-    try { await tryPlay(url); return; } catch (e) {}
-  }
-  try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(word); u.lang = accent === "gb" ? "en-GB" : "en-US"; speechSynthesis.speak(u); } catch (e) {}
+  try {
+    const u = new SpeechSynthesisUtterance(text); u.lang = "en-US"; u.rate = Math.max(0.6, S.speed * 0.9);
+    if (enVoice) u.voice = enVoice;
+    speechSynthesis.speak(u);
+  } catch (err) { setStatus("このブラウザでは単語の読み上げを使えません。"); }
 }
-let card = null;
-async function openWordCard(line, k) {
-  const words = wordTiming(line); if (!words || !words[k]) return;
-  const w = words[k], word = dictKey(w.clean || w.text); if (!word) return;
-  card = { line, k, word };
-  $("ws-word").textContent = word;
-  $("ws-phon").textContent = ""; $("ws-defs").innerHTML = "";
-  $("ws-ja").textContent = "意味を調べています…";
-  $("ws-mine").disabled = !takes[line];
-  const dlg = $("word-sheet"); if (!dlg.open) dlg.showModal();
-  sayWord(word, "us");
-  const d = await lookup(word);
-  if (!card || card.word !== word) return;
-  $("ws-phon").textContent = d.phon;
-  $("ws-ja").textContent = d.ja || (d.defs.length ? "" : d.failed ? "辞書に接続できませんでした。インターネット接続を確認してください。" : "意味が見つかりませんでした。");
-  $("ws-defs").innerHTML = d.defs.map(x => `<li><i>${esc(POS_JA[x.pos] || x.pos || "")}</i>${esc(x.text)}</li>`).join("");
-}
-$("ws-us").addEventListener("click", () => card && sayWord(card.word, "us"));
-$("ws-uk").addEventListener("click", () => card && sayWord(card.word, "gb"));
-$("ws-model").addEventListener("click", () => card && playWord(card.line, card.k, "ref"));
-$("ws-mine").addEventListener("click", () => card && playWord(card.line, card.k, "mine"));
-$("word-sheet").addEventListener("click", (e) => { if (e.target === e.currentTarget) e.currentTarget.close(); });
-$("word-sheet").addEventListener("close", () => { if (!dictAudio.paused) dictAudio.pause(); });
 
 /* ---------- drag across words: play that stretch of the uploaded model ---------- */
 const drag = { on: false, moved: false, suppress: false };
@@ -1086,9 +996,9 @@ document.addEventListener("pointerup", () => {
 document.addEventListener("pointercancel", () => { if (drag.on) { drag.on = false; clearSel(); } });
 $("inner").addEventListener("click", (e) => {
   const b = e.target.closest(".wbtn"); if (!b || drag.suppress) return;
-  const line = +b.dataset.line;
+  const line = +b.dataset.line, words = wordTiming(line), w = words && words[+b.dataset.w];
+  if (w) speakWord(w.clean || w.text);
   if (line !== S.sel) select(line, { keepScroll: true });
-  openWordCard(line, +b.dataset.w);
 });
 
 /* ---------- metrics ---------- */
@@ -1180,7 +1090,7 @@ function wordItems(i, who) {
   if (who === "mine" && !mw) return [];
   return words.map((w, k) => {
     const syl = who === "mine" ? mw[k].syl.map((s, q) => Object.assign({}, s, { a: w.syl[q].a, b: w.syl[q].b })) : w.syl;
-    const tip = "：タップで発音と意味、ドラッグでその範囲を再生";
+    const tip = "：タップで発音、ドラッグでその範囲をお手本の音声で再生";
     return { i, a: w.a, b: w.b, syl, html: `<button type="button" class="wbtn" data-line="${i}" data-w="${k}" data-who="${who}" title="${esc(w.clean)}${tip}">${syl.map(s => sylHTML(s, true)).join("")}</button>` };
   });
 }
@@ -1320,9 +1230,8 @@ function setPlayBtn(playing) {
 function stopAll() {
   const c = cur; cur = null;
   for (const k of PLAYERS) if (!audios[k].paused) audios[k].pause();
-  if (!dictAudio.paused) dictAudio.pause();
   setPlayBtn(false);
-  try { speechSynthesis.cancel(); } catch (e) {}
+  try { if (speechSynthesis.speaking || speechSynthesis.pending) speechSynthesis.cancel(); } catch (e) {}
   if (c && c.then && c.cancelThen) c.cancelThen();
 }
 function whenReady(a) { return a.readyState >= 1 ? Promise.resolve() : new Promise(r => a.addEventListener("loadedmetadata", r, { once: true })); }
