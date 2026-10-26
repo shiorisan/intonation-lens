@@ -140,9 +140,7 @@ select.sel{border:1px solid var(--line);background:var(--surface);border-radius:
 .wrow.ref{--c:var(--ref);--c-soft:var(--ref-soft)} .wrow.mine{--c:var(--mine);--c-soft:var(--mine-soft)}
 .wbtn{flex:none;border:0;background:none;padding:2px 1px;border-radius:6px;cursor:pointer;font-family:var(--display);line-height:1.15;color:var(--ink);display:inline-flex;align-items:baseline}
 .wbtn.now{background:var(--c-soft)}
-.wrow,.wbtn{touch-action:pan-y}
 .wbtn{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
-.wbtn.sel{background:var(--c-soft);box-shadow:inset 0 -2px 0 var(--c)}
 .gloss{position:absolute;z-index:3;pointer-events:none;background:var(--ink);color:var(--bg);font-size:12px;font-weight:500;line-height:1.4;padding:3px 8px;border-radius:6px;white-space:nowrap;max-width:min(260px,92%);overflow:hidden;text-overflow:ellipsis;box-shadow:0 2px 8px rgba(0,0,0,.18)}
 @media (hover:hover){.wbtn:hover{background:var(--surface-2)}}
 .syl{display:inline-block}
@@ -210,7 +208,8 @@ dialog.sheet::backdrop{background:rgba(10,16,22,.45)}
   .panel-head > .nav{display:none}
   .practice{gap:8px}
   .source .row{flex:1 1 100%}
-  .source .row .btn,.pr-btns .btn{flex:1 1 auto;padding-inline:10px}
+  .source .row .btn{flex:1 1 auto;padding-inline:10px}
+  .pr-btns{display:none} /* phones use the bottom bar for these */
   .line-card{width:min(72vw,240px)}
   .wrow{min-height:30px;padding-bottom:2px}
   .strip + .strip{margin-top:2px}
@@ -342,6 +341,7 @@ dialog.sheet::backdrop{background:rgba(10,16,22,.45)}
   <button class="iconbtn" id="mb-next" type="button" aria-label="次の行"><svg viewBox="0 0 16 16"><path d="M6 3l5 5-5 5"/></svg></button>
   <button class="btn tone ref-c" id="mb-ref" type="button"><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg>お手本</button>
   <button class="btn recbtn" id="mb-rec" type="button"><span class="dot"></span>録音</button>
+  <button class="btn tone mine-c" id="mb-mine" type="button"><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg>あなた</button>
 </nav>
 
 <script>
@@ -397,7 +397,11 @@ async function decodeFile(file) {
   const ctx = new AC();
   let ab;
   try { ab = await ctx.decodeAudioData(buf); } finally { try { ctx.close(); } catch (e) {} }
-  return { samples: await resample(ab), truncated: ab.duration > MAX_SEC };
+  // play back from uncompressed PCM made from this same decode: seeking an MP3/M4A lands off by encoder padding
+  // and approximate seeks, so taps on the chart would start in the wrong place
+  const n = Math.min(ab.length, Math.ceil(MAX_SEC * ab.sampleRate)), mono = new Float32Array(n);
+  for (let c = 0; c < ab.numberOfChannels; c++) { const d = ab.getChannelData(c); for (let i = 0; i < n; i++) mono[i] += d[i] / ab.numberOfChannels; }
+  return { samples: await resample(ab), truncated: ab.duration > MAX_SEC, playUrl: URL.createObjectURL(wavBlob(mono, ab.sampleRate)) };
 }
 
 /* ---------- analysis: YIN pitch + intensity + syllable nuclei ---------- */
@@ -916,7 +920,8 @@ function renderHeader() {
 function syncBar() {
   const bm = $("rec-model"), r = $("mb-rec"), on = bm.classList.contains("recording");
   $("mb-pos").innerHTML = $("pos").innerHTML;
-  $("mb-prev").disabled = $("prev").disabled; $("mb-next").disabled = $("next").disabled; $("mb-ref").disabled = $("lp-ref").disabled;
+  $("mb-prev").disabled = $("prev").disabled; $("mb-next").disabled = $("next").disabled;
+  $("mb-ref").disabled = $("lp-ref").disabled; $("mb-mine").disabled = $("lp-mine").disabled;
   r.disabled = bm.disabled; r.classList.toggle("recording", on);
   r.innerHTML = `<span class="dot"></span>${on ? "停止" : "録音"}`;
 }
@@ -924,6 +929,7 @@ $("mb-prev").addEventListener("click", () => $("prev").click());
 $("mb-next").addEventListener("click", () => $("next").click());
 $("mb-ref").addEventListener("click", () => $("lp-ref").click());
 $("mb-rec").addEventListener("click", () => $("rec-model").click());
+$("mb-mine").addEventListener("click", () => $("lp-mine").click());
 // hide the fixed bar while the on-screen keyboard is likely up
 document.addEventListener("focusin", (e) => { if (e.target.matches("textarea,input:not([type=checkbox]):not([type=file]),select")) document.body.classList.add("typing"); });
 document.addEventListener("focusout", () => document.body.classList.remove("typing"));
@@ -997,42 +1003,8 @@ async function showGloss(line, k, who, text) {
   glossTimer = setTimeout(hideGloss, 5000);
 }
 
-/* ---------- drag across words: play that stretch of the uploaded model ---------- */
-const drag = { on: false, moved: false, suppress: false };
-function clearSel() { document.querySelectorAll(".wbtn.sel").forEach(b => b.classList.remove("sel")); }
-function markSel(line, k0, k1) {
-  clearSel();
-  const lo = Math.min(k0, k1), hi = Math.max(k0, k1);
-  document.querySelectorAll(`.wbtn[data-line="${line}"]`).forEach(b => { const k = +b.dataset.w; if (k >= lo && k <= hi) b.classList.add("sel"); });
-}
-$("inner").addEventListener("pointerdown", (e) => {
-  const b = e.target.closest(".wbtn"); if (!b || e.button > 0) return;
-  try { b.releasePointerCapture(e.pointerId); } catch (x) {}
-  Object.assign(drag, { on: true, moved: false, line: +b.dataset.line, k0: +b.dataset.w, k1: +b.dataset.w });
-  clearSel(); hideGloss();
-});
-document.addEventListener("pointermove", (e) => {
-  if (!drag.on) return;
-  const el = document.elementFromPoint(e.clientX, e.clientY), b = el && el.closest ? el.closest(".wbtn") : null;
-  if (b && +b.dataset.line === drag.line) drag.k1 = +b.dataset.w;
-  if (drag.k1 !== drag.k0) drag.moved = true;
-  if (drag.moved) markSel(drag.line, drag.k0, drag.k1);
-});
-document.addEventListener("pointerup", () => {
-  if (!drag.on) return;
-  drag.on = false;
-  if (!drag.moved) return;
-  drag.suppress = true; setTimeout(() => { drag.suppress = false; }, 0);
-  const { line, k0, k1 } = drag, words = wordTiming(line); if (!words) return;
-  const lo = Math.min(k0, k1), hi = Math.max(k0, k1);
-  if (line !== S.sel) select(line, { keepScroll: true });
-  markSel(line, lo, hi);
-  const end = hi === words.length - 1 ? REF.segs[line].b / FPS : words[hi].b / FPS + 0.08;
-  playModelRange(Math.max(0, words[lo].a / FPS - 0.04), end, clearSel, line, "orig");
-});
-document.addEventListener("pointercancel", () => { if (drag.on) { drag.on = false; clearSel(); } });
 $("inner").addEventListener("click", (e) => {
-  const b = e.target.closest(".wbtn"); if (!b || drag.suppress) return;
+  const b = e.target.closest(".wbtn"); if (!b) return;
   const line = +b.dataset.line, k = +b.dataset.w, who = b.dataset.who, words = wordTiming(line), w = words && words[k];
   if (w) speakWord(w.clean || w.text);
   if (line !== S.sel) select(line, { keepScroll: true });
@@ -1128,7 +1100,7 @@ function wordItems(i, who) {
   if (who === "mine" && !mw) return [];
   return words.map((w, k) => {
     const syl = who === "mine" ? mw[k].syl.map((s, q) => Object.assign({}, s, { a: w.syl[q].a, b: w.syl[q].b })) : w.syl;
-    const tip = "：タップで発音と意味、ドラッグでその範囲をお手本の音声で再生";
+    const tip = "：タップで発音と意味";
     return { i, a: w.a, b: w.b, syl, html: `<button type="button" class="wbtn" data-line="${i}" data-w="${k}" data-who="${who}" title="${esc(w.clean)}${tip}">${syl.map(s => sylHTML(s, true)).join("")}</button>` };
   });
 }
@@ -1268,7 +1240,7 @@ function setPlayBtn(playing) {
 function stopAll() {
   const c = cur; cur = null;
   for (const k of PLAYERS) if (!audios[k].paused) audios[k].pause();
-  setPlayBtn(false);
+  setPlayBtn(false); syncPlayBtns();
   try { if (speechSynthesis.speaking || speechSynthesis.pending) speechSynthesis.cancel(); } catch (e) {}
   if (c && c.then && c.cancelThen) c.cancelThen();
 }
@@ -1281,8 +1253,8 @@ async function playRange(k, from, to, then, follow, line) {
   a.currentTime = Math.max(0, from);
   const me = { k, to, then, follow, line };
   cur = me;
-  try { await a.play(); if (cur !== me) return; if (k === "ref" && to === Infinity) setPlayBtn(true); loop(); }
-  catch (e) { if (cur === me) cur = null; setStatus("再生できませんでした。もう一度押してください。"); }
+  try { await a.play(); if (cur !== me) return; if (k === "ref" && to === Infinity) setPlayBtn(true); syncPlayBtns(); loop(); }
+  catch (e) { if (cur === me) cur = null; syncPlayBtns(); setStatus("再生できませんでした。もう一度押してください。"); }
 }
 async function playTake(i, from, to, then) {
   const tk = takes[i]; if (!tk) return;
@@ -1293,10 +1265,10 @@ async function playTake(i, from, to, then) {
 function finish(k) {
   if (!cur || cur.k !== k) return;
   const th = cur.then; cur = null;
-  audios[k].pause(); setPlayBtn(false);
+  audios[k].pause(); setPlayBtn(false); syncPlayBtns();
   if (th) setTimeout(th, 300);
 }
-for (const k of PLAYERS) audios[k].addEventListener("ended", () => finish(k));
+for (const k of PLAYERS) { audios[k].addEventListener("ended", () => finish(k)); audios[k].addEventListener("pause", () => syncPlayBtns()); }
 audios.ref.addEventListener("pause", () => setPlayBtn(false));
 function playRefLine(then) { const s = REF.segs[S.sel]; return playModelRange(s.a / FPS, s.b / FPS, then, S.sel); }
 async function playModelRange(from, to, then, line, voice) {
@@ -1306,8 +1278,20 @@ async function playModelRange(from, to, then, line, voice) {
 }
 function playMineLine(then) { const tk = takes[S.sel]; if (tk) playTake(S.sel, tk.seg.a / FPS, tk.seg.b / FPS, then); }
 $("play-ref").addEventListener("click", () => { if (!audios.ref.paused) { stopAll(); return; } if (REF) playRange("ref", 0, Infinity, null, true); });
-$("lp-ref").addEventListener("click", () => { if (REF) { const s = REF.segs[S.sel]; playModelRange(s.a / FPS, s.b / FPS, null, S.sel, "orig"); } });
-$("lp-mine").addEventListener("click", () => playMineLine());
+// while something plays, its button turns into a stop button
+function playBtn(id, playing, label) {
+  $(id).innerHTML = `<svg viewBox="0 0 12 12"><path d="${playing ? "M2 2h8v8H2z" : "M2 1l9 5-9 5z"}"/></svg>${playing ? "停止" : label}`;
+}
+function syncPlayBtns() {
+  const k = cur && !audios[cur.k].paused ? cur.k : null, model = k === "ref" || k === "conv";
+  playBtn("lp-ref", model, "お手本"); playBtn("mb-ref", model, "お手本");
+  playBtn("lp-mine", k === "mine", "あなたの録音"); playBtn("mb-mine", k === "mine", "あなた");
+}
+$("lp-ref").addEventListener("click", () => {
+  if (cur && (cur.k === "ref" || cur.k === "conv")) { stopAll(); return; }
+  if (REF) { const s = REF.segs[S.sel]; playModelRange(s.a / FPS, s.b / FPS, null, S.sel); }
+});
+$("lp-mine").addEventListener("click", () => { if (cur && cur.k === "mine") { stopAll(); return; } playMineLine(); });
 
 function markWords(line, frame) {
   let key = "";
@@ -1350,14 +1334,17 @@ function loop() {
 function hidePlayhead() { document.querySelectorAll(".strip .playhead").forEach(el => { el.style.display = "none"; }); }
 $("inner").addEventListener("click", (e) => {
   const el = e.target.closest(".strip");
-  if (!REF || !geo || !el || drag.suppress || e.target.closest("[data-w]")) return;
+  if (!REF || !geo || !el || e.target.closest("[data-w]")) return;
+  // tap a point: play from the start of the word there to the end of the line (your lane plays your take)
   const st = geo.strips[+el.dataset.s], r = el.getBoundingClientRect();
   const t = st.t0 + (e.clientX - r.left - PADX) / (st.W - 2 * PADX) * (st.t1 - st.t0);
-  const i = S.view === "line" ? S.sel : lineAtTime(t), p = e.target.closest(".lane.mine") ? getPair(i) : null;
+  const i = S.view === "line" ? S.sel : lineAtTime(t), s = REF.segs[i], words = wordTiming(i);
+  let f = Math.max(s.a, Math.min(s.b - 15, Math.round(t * FPS)));
+  if (words) { let k = words.findIndex((w, q) => f < (q < words.length - 1 ? words[q + 1].a : Infinity)); if (k < 0) k = words.length - 1; f = Math.max(s.a, words[k].a - 3); }
   if (i !== S.sel) select(i, { keepScroll: true });
-  if (p) { const k = Math.max(0, Math.min(p.map.length - 1, Math.round(t * FPS) - p.rs.a)); playTake(i, p.map[k] / FPS, p.ms.b / FPS); return; }
-  if (S.view === "line") { const s = REF.segs[i]; playRange("ref", Math.max(s.a / FPS, t), s.b / FPS, null, false, i); }
-  else playRange("ref", Math.max(0, t), Infinity);
+  const p = e.target.closest(".lane.mine") ? getPair(i) : null;
+  if (p) { const k = Math.max(0, Math.min(p.map.length - 1, f - p.rs.a)); playTake(i, p.map[k] / FPS, p.ms.b / FPS); return; }
+  playRange("ref", f / FPS, s.b / FPS, null, false, i);
 });
 
 /* ---------- recorder ---------- */
@@ -1863,7 +1850,7 @@ async function loadRef(file) {
   if (REF && REF.url) URL.revokeObjectURL(REF.url);
   for (const k in takes) URL.revokeObjectURL(takes[k].url);
   takes = {};
-  const url = URL.createObjectURL(file);
+  const url = dec.playUrl;
   audios.ref.src = url;
   clearConv();
   REF = { name: file.name, samples: dec.samples, an, url, transcript: null, isSample: false };
@@ -1941,11 +1928,11 @@ function synth(sylls) {
   }
   return out;
 }
-function wavBlob(x) {
+function wavBlob(x, rate = SR) {
   const n = x.length, buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
   const w = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
   w(0, "RIFF"); v.setUint32(4, 36 + n * 2, true); w(8, "WAVE"); w(12, "fmt "); v.setUint32(16, 16, true);
-  v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, SR, true); v.setUint32(28, SR * 2, true);
+  v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, rate, true); v.setUint32(28, rate * 2, true);
   v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, "data"); v.setUint32(40, n * 2, true);
   for (let i = 0; i < n; i++) v.setInt16(44 + i * 2, Math.max(-1, Math.min(1, x[i])) * 32767, true);
   return new Blob([buf], { type: "audio/wav" });
